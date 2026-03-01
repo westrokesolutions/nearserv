@@ -34,7 +34,7 @@ const Navbar = () => {
               Log in
             </Link>
             <Link
-              to="/search"
+              to="/register"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-colors"
             >
               <Award className="w-4 h-4" />
