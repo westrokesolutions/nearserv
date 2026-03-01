@@ -25,7 +25,7 @@ const CTASection = () => {
             <Button
               size="lg"
               className="bg-accent text-accent-foreground hover:bg-accent/90 px-8 py-6 rounded-xl font-semibold"
-              onClick={() => navigate("/search")}
+              onClick={() => navigate("/register")}
             >
               <UserPlus className="w-5 h-5 mr-2" />
               Register as Professional
