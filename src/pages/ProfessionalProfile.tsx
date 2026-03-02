@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, BadgeCheck, Star, MapPin, Phone, MessageCircle,
@@ -7,18 +8,44 @@ import {
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { mockProfessionals } from "@/components/ProfessionalCard";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
-const mockReviews = [
-  { id: "1", author: "Anita M.", rating: 5, text: "Excellent work, very professional and on time. Highly recommended!", date: "2 weeks ago" },
-  { id: "2", author: "Rohan K.", rating: 4, text: "Good quality service. Fair pricing. Will hire again.", date: "1 month ago" },
-  { id: "3", author: "Priyanka S.", rating: 5, text: "Best in the area! Very responsive and skilled.", date: "2 months ago" },
-];
+type Professional = Tables<"professionals"> & { categories: { name: string } | null };
+type Review = Tables<"reviews">;
 
 const ProfessionalProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const professional = mockProfessionals.find((p) => p.id === id);
+  const [professional, setProfessional] = useState<Professional | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (id) fetchProfessional();
+  }, [id]);
+
+  const fetchProfessional = async () => {
+    setLoading(true);
+    const [proRes, revRes] = await Promise.all([
+      supabase.from("professionals").select("*, categories(name)").eq("id", id!).single(),
+      supabase.from("reviews").select("*").eq("professional_id", id!).eq("is_approved", true),
+    ]);
+    if (proRes.data) setProfessional(proRes.data as Professional);
+    if (revRes.data) setReviews(revRes.data);
+    setLoading(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="pt-24 flex items-center justify-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!professional) {
     return (
@@ -30,6 +57,11 @@ const ProfessionalProfile = () => {
       </div>
     );
   }
+
+  const avgRating = reviews.length > 0
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    : "0";
+  const catName = professional.categories?.name || "";
 
   return (
     <div className="min-h-screen bg-background">
@@ -48,8 +80,7 @@ const ProfessionalProfile = () => {
             animate={{ opacity: 1, y: 0 }}
             className="bg-card rounded-2xl border border-border overflow-hidden shadow-medium"
           >
-            {/* Header */}
-            {professional.premium && (
+            {professional.is_premium && (
               <div className="bg-gold/10 text-gold-foreground text-sm font-semibold px-6 py-2 flex items-center gap-2">
                 <Award className="w-4 h-4" />
                 Featured Professional · Premium Member
@@ -58,47 +89,51 @@ const ProfessionalProfile = () => {
             <div className="p-6 md:p-8">
               <div className="flex flex-col md:flex-row gap-6">
                 <img
-                  src={professional.avatar}
-                  alt={professional.name}
+                  src={professional.avatar_url || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face"}
+                  alt={professional.full_name}
                   className="w-28 h-28 rounded-2xl object-cover ring-2 ring-border"
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
-                      {professional.name}
+                      {professional.full_name}
                     </h1>
-                    {professional.verified && (
+                    {professional.verification === "verified" && (
                       <BadgeCheck className="w-6 h-6 text-accent" />
                     )}
                   </div>
-                  <p className="text-muted-foreground text-lg mb-3">{professional.headline}</p>
+                  <p className="text-muted-foreground text-lg mb-3">
+                    {professional.headline || catName}
+                  </p>
                   <div className="flex flex-wrap items-center gap-4 text-sm">
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 text-gold fill-gold" />
-                      <span className="font-semibold text-foreground">{professional.rating}</span>
-                      <span className="text-muted-foreground">({professional.reviewCount} reviews)</span>
+                      <span className="font-semibold text-foreground">{avgRating}</span>
+                      <span className="text-muted-foreground">({reviews.length} reviews)</span>
                     </div>
                     <div className="flex items-center gap-1 text-muted-foreground">
                       <MapPin className="w-4 h-4" />
-                      {professional.location}
+                      {professional.area}, {professional.city}
                     </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Briefcase className="w-4 h-4" />
-                      {professional.experience}
-                    </div>
+                    {professional.experience_years && (
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Briefcase className="w-4 h-4" />
+                        {professional.experience_years} years
+                      </div>
+                    )}
                     <div className="flex items-center gap-1 text-muted-foreground">
                       <Clock className="w-4 h-4" />
-                      Available now
+                      {professional.availability_status || "Available"}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Contact buttons */}
               <div className="flex flex-col sm:flex-row gap-3 mt-8">
                 <Button
                   size="lg"
                   className="bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl font-semibold flex-1"
+                  onClick={() => window.open(`tel:${professional.phone}`)}
                 >
                   <Phone className="w-5 h-5 mr-2" />
                   Call Now
@@ -107,6 +142,7 @@ const ProfessionalProfile = () => {
                   size="lg"
                   variant="outline"
                   className="rounded-xl font-semibold flex-1 border-emerald text-emerald hover:bg-emerald-light"
+                  onClick={() => window.open(`https://wa.me/${professional.phone.replace(/[^0-9]/g, "")}`)}
                 >
                   <MessageCircle className="w-5 h-5 mr-2" />
                   WhatsApp
@@ -114,24 +150,19 @@ const ProfessionalProfile = () => {
               </div>
             </div>
 
-            {/* Details sections */}
             <div className="border-t border-border p-6 md:p-8 space-y-8">
-              {/* About */}
               <div>
                 <h2 className="font-display text-lg font-bold text-foreground mb-3">About</h2>
                 <p className="text-muted-foreground leading-relaxed">
-                  Experienced {professional.category.toLowerCase()} professional serving the {professional.location} area
-                  with {professional.experience} of hands-on experience. Committed to quality work and customer satisfaction.
-                  Available for both residential and commercial projects.
+                  {professional.description || `Experienced ${catName.toLowerCase()} professional serving the ${professional.area}, ${professional.city} area.`}
                 </p>
               </div>
 
-              {/* Services & Pricing */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <h2 className="font-display text-lg font-bold text-foreground mb-3">Services</h2>
                   <ul className="space-y-2">
-                    {[`${professional.category} Consultation`, "Emergency Service", "Regular Maintenance", "Project Work"].map((s) => (
+                    {[`${catName} Consultation`, "Emergency Service", "Regular Maintenance", "Project Work"].map((s) => (
                       <li key={s} className="flex items-center gap-2 text-sm text-muted-foreground">
                         <div className="w-1.5 h-1.5 rounded-full bg-accent" />
                         {s}
@@ -142,47 +173,58 @@ const ProfessionalProfile = () => {
                 <div>
                   <h2 className="font-display text-lg font-bold text-foreground mb-3">Details</h2>
                   <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Rate</span>
-                      <span className="font-semibold text-foreground">{professional.hourlyRate}</span>
-                    </div>
+                    {professional.hourly_rate && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Rate</span>
+                        <span className="font-semibold text-foreground">₹{professional.hourly_rate}/hr</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Category</span>
-                      <span className="font-semibold text-foreground">{professional.category}</span>
+                      <span className="font-semibold text-foreground">{catName}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Coverage</span>
+                      <span className="font-semibold text-foreground">{professional.coverage_radius_km} km</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Verification</span>
                       <span className="flex items-center gap-1 font-semibold text-accent">
-                        {professional.verified ? <><Shield className="w-3.5 h-3.5" /> Verified</> : "Pending"}
+                        {professional.verification === "verified" ? <><Shield className="w-3.5 h-3.5" /> Verified</> : "Pending"}
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Reviews */}
               <div>
                 <h2 className="font-display text-lg font-bold text-foreground mb-4">
-                  Reviews ({professional.reviewCount})
+                  Reviews ({reviews.length})
                 </h2>
-                <div className="space-y-4">
-                  {mockReviews.map((r) => (
-                    <div key={r.id} className="p-4 rounded-xl bg-secondary/50 border border-border">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm text-foreground">{r.author}</span>
-                          <div className="flex gap-0.5">
-                            {Array.from({ length: r.rating }).map((_, i) => (
-                              <Star key={i} className="w-3 h-3 text-gold fill-gold" />
-                            ))}
+                {reviews.length > 0 ? (
+                  <div className="space-y-4">
+                    {reviews.map((r) => (
+                      <div key={r.id} className="p-4 rounded-xl bg-secondary/50 border border-border">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm text-foreground">{r.reviewer_name}</span>
+                            <div className="flex gap-0.5">
+                              {Array.from({ length: r.rating }).map((_, i) => (
+                                <Star key={i} className="w-3 h-3 text-gold fill-gold" />
+                              ))}
+                            </div>
                           </div>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(r.created_at).toLocaleDateString()}
+                          </span>
                         </div>
-                        <span className="text-xs text-muted-foreground">{r.date}</span>
+                        {r.comment && <p className="text-sm text-muted-foreground">{r.comment}</p>}
                       </div>
-                      <p className="text-sm text-muted-foreground">{r.text}</p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">No reviews yet.</p>
+                )}
               </div>
             </div>
           </motion.div>
