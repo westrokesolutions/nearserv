@@ -1,25 +1,27 @@
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Wrench, Zap, Globe, Palette, GraduationCap, Camera,
   Dumbbell, Hammer, CalendarDays, Scale,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-const categories = [
-  { name: "Plumbing", icon: Wrench, count: 48 },
-  { name: "Electrical", icon: Zap, count: 62 },
-  { name: "Web Development", icon: Globe, count: 35 },
-  { name: "Graphic Design", icon: Palette, count: 41 },
-  { name: "Tutors", icon: GraduationCap, count: 73 },
-  { name: "Photography", icon: Camera, count: 29 },
-  { name: "Fitness Trainers", icon: Dumbbell, count: 54 },
-  { name: "Carpentry", icon: Hammer, count: 22 },
-  { name: "Event Services", icon: CalendarDays, count: 38 },
-  { name: "Legal & Financial", icon: Scale, count: 19 },
-];
+const iconMap: Record<string, any> = {
+  wrench: Wrench, zap: Zap, code: Globe, palette: Palette,
+  "book-open": GraduationCap, camera: Camera, dumbbell: Dumbbell,
+  hammer: Hammer, calendar: CalendarDays, scale: Scale,
+};
 
 const CategoriesSection = () => {
   const navigate = useNavigate();
+  const [categories, setCategories] = useState<{ name: string; slug: string; icon: string | null }[]>([]);
+
+  useEffect(() => {
+    supabase.from("categories").select("name, slug, icon").eq("is_active", true).order("name").then(({ data }) => {
+      if (data) setCategories(data);
+    });
+  }, []);
 
   return (
     <section className="py-20 lg:py-28 bg-background">
@@ -39,23 +41,25 @@ const CategoriesSection = () => {
         </motion.div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {categories.map((cat, i) => (
-            <motion.button
-              key={cat.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-              onClick={() => navigate(`/search?q=${encodeURIComponent(cat.name)}`)}
-              className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-card border border-border hover:border-accent/40 hover:shadow-elevated transition-all duration-300"
-            >
-              <div className="w-14 h-14 rounded-xl bg-emerald-light flex items-center justify-center group-hover:bg-accent/20 transition-colors">
-                <cat.icon className="w-6 h-6 text-accent" />
-              </div>
-              <span className="font-medium text-foreground text-sm">{cat.name}</span>
-              <span className="text-xs text-muted-foreground">{cat.count} pros</span>
-            </motion.button>
-          ))}
+          {categories.map((cat, i) => {
+            const Icon = iconMap[cat.icon || ""] || Wrench;
+            return (
+              <motion.button
+                key={cat.slug}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                onClick={() => navigate(`/search?q=${encodeURIComponent(cat.name)}`)}
+                className="group flex flex-col items-center gap-3 p-6 rounded-2xl bg-card border border-border hover:border-accent/40 hover:shadow-elevated transition-all duration-300"
+              >
+                <div className="w-14 h-14 rounded-xl bg-emerald-light flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+                  <Icon className="w-6 h-6 text-accent" />
+                </div>
+                <span className="font-medium text-foreground text-sm">{cat.name}</span>
+              </motion.button>
+            );
+          })}
         </div>
       </div>
     </section>
