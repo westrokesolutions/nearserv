@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Star } from "lucide-react";
+import { Star, Quote } from "lucide-react";
 
 const testimonials = [
   {
@@ -27,7 +27,7 @@ const testimonials = [
 
 const TestimonialsSection = () => {
   return (
-    <section className="py-20 lg:py-28 bg-secondary/50">
+    <section className="py-16 lg:py-24 bg-background">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -35,11 +35,11 @@ const TestimonialsSection = () => {
           viewport={{ once: true }}
           className="text-center mb-14"
         >
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Loved by Thousands
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-3">
+            What Our Users Say
           </h2>
           <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-            See what our community says about NearServ
+            Trusted by thousands of customers and professionals
           </p>
         </motion.div>
 
@@ -51,18 +51,19 @@ const TestimonialsSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className="bg-card rounded-2xl p-6 border border-border shadow-soft"
+              className="relative bg-card rounded-2xl p-7 border border-border shadow-soft hover:shadow-elevated transition-shadow"
             >
-              <div className="flex gap-1 mb-4">
+              <Quote className="w-8 h-8 text-accent/20 mb-4" />
+              <div className="flex gap-0.5 mb-4">
                 {Array.from({ length: t.rating }).map((_, j) => (
                   <Star key={j} className="w-4 h-4 text-gold fill-gold" />
                 ))}
               </div>
               <p className="text-foreground/80 text-sm leading-relaxed mb-6">"{t.text}"</p>
-              <div className="flex items-center gap-3">
-                <img src={t.avatar} alt={t.name} className="w-10 h-10 rounded-full object-cover" />
+              <div className="flex items-center gap-3 pt-4 border-t border-border">
+                <img src={t.avatar} alt={t.name} className="w-11 h-11 rounded-full object-cover ring-2 ring-accent/20" />
                 <div>
-                  <p className="font-semibold text-sm text-foreground">{t.name}</p>
+                  <p className="font-display font-semibold text-sm text-foreground">{t.name}</p>
                   <p className="text-xs text-muted-foreground">{t.role}</p>
                 </div>
               </div>
