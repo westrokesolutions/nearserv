@@ -17,6 +17,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  const searchParams = new URLSearchParams(window.location.search);
+  const redirectTo = searchParams.get("redirect") || "/";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +27,7 @@ const Auth = () => {
       if (isLogin) {
         await signIn(email, password);
         toast({ title: "Welcome back!" });
-        navigate("/");
+        navigate(redirectTo);
       } else {
         await signUp(email, password, fullName);
         toast({

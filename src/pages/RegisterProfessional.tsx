@@ -54,7 +54,14 @@ const RegisterProfessional = () => {
   const [submitting, setSubmitting] = useState(false);
   const [direction, setDirection] = useState(1);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth?redirect=/register");
+    }
+  }, [user, loading, navigate]);
 
   useEffect(() => {
     supabase.from("categories").select("*").eq("is_active", true).order("name").then(({ data }) => {
@@ -71,6 +78,14 @@ const RegisterProfessional = () => {
       }));
     }
   }, [user]);
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   const update = (field: keyof FormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
