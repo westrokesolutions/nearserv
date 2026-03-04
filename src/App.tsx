@@ -9,6 +9,7 @@ import SearchPage from "./pages/SearchPage";
 import ProfessionalProfile from "./pages/ProfessionalProfile";
 import RegisterProfessional from "./pages/RegisterProfessional";
 import Auth from "./pages/Auth";
+import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/professional/:id" element={<ProfessionalProfile />} />
             <Route path="/register" element={<RegisterProfessional />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

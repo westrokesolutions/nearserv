@@ -33,7 +33,7 @@ const Navbar = () => {
               className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               <LayoutDashboard className="w-4 h-4" />
-              Admin
+              Dashboard
             </Link>
           )}
           <Link
