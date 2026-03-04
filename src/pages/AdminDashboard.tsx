@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Users, CheckCircle, XCircle, Clock, Shield,
-  Star, BarChart3, Eye, Trash2,
+  Users, CheckCircle, XCircle, Clock, Shield, Star,
+  BarChart3, Eye, Trash2, RefreshCw, TrendingUp,
+  FolderOpen, MessageSquare, Activity, LogOut,
+  MapPin, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -15,78 +16,99 @@ import type { Tables } from "@/integrations/supabase/types";
 
 type Professional = Tables<"professionals"> & { categories?: { name: string } | null };
 type Review = Tables<"reviews"> & { professionals?: { full_name: string } | null };
+type Category = Tables<"categories">;
 
 const AdminDashboard = () => {
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"professionals" | "reviews" | "stats">("professionals");
+  const [tab, setTab] = useState<"overview" | "professionals" | "reviews" | "categories">("overview");
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedPro, setExpandedPro] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
-      navigate("/");
+      navigate("/admin-login");
     }
   }, [user, isAdmin, authLoading, navigate]);
 
-  useEffect(() => {
-    if (isAdmin) fetchData();
-  }, [isAdmin]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    const [prosRes, revRes] = await Promise.all([
-      supabase.from("professionals").select("*, categories(name)"),
-      supabase.from("reviews").select("*, professionals(full_name)"),
+    const [prosRes, revRes, catRes] = await Promise.all([
+      supabase.from("professionals").select("*, categories(name)").order("created_at", { ascending: false }),
+      supabase.from("reviews").select("*, professionals(full_name)").order("created_at", { ascending: false }),
+      supabase.from("categories").select("*").order("name"),
     ]);
     if (prosRes.data) setProfessionals(prosRes.data as Professional[]);
     if (revRes.data) setReviews(revRes.data as Review[]);
+    if (catRes.data) setCategories(catRes.data);
     setLoading(false);
-  };
+  }, []);
 
-  const updateProfessionalStatus = async (id: string, status: "approved" | "rejected") => {
-    const { error } = await supabase
-      .from("professionals")
-      .update({ status })
-      .eq("id", id);
+  useEffect(() => {
+    if (isAdmin) fetchData();
+  }, [isAdmin, fetchData]);
+
+  // Realtime subscriptions
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const channel = supabase
+      .channel("admin-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "professionals" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "reviews" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => fetchData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin, fetchData]);
+
+  const updateProfessionalStatus = async (id: string, status: "approved" | "rejected" | "suspended") => {
+    const { error } = await supabase.from("professionals").update({ status }).eq("id", id);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: `Professional ${status}` });
-      fetchData();
+    }
+  };
+
+  const updateVerification = async (id: string, verification: "verified" | "unverified") => {
+    const { error } = await supabase.from("professionals").update({ verification }).eq("id", id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: `Verification updated` });
     }
   };
 
   const approveReview = async (id: string) => {
-    const { error } = await supabase
-      .from("reviews")
-      .update({ is_approved: true })
-      .eq("id", id);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Review approved" });
-      fetchData();
-    }
+    const { error } = await supabase.from("reviews").update({ is_approved: true }).eq("id", id);
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else toast({ title: "Review approved" });
   };
 
   const deleteReview = async (id: string) => {
     const { error } = await supabase.from("reviews").delete().eq("id", id);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Review deleted" });
-      fetchData();
-    }
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else toast({ title: "Review deleted" });
   };
 
-  if (authLoading || loading) {
+  const toggleCategory = async (id: string, isActive: boolean) => {
+    const { error } = await supabase.from("categories").update({ is_active: !isActive }).eq("id", id);
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else toast({ title: `Category ${!isActive ? "activated" : "deactivated"}` });
+  };
+
+  if (authLoading || (loading && professionals.length === 0)) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="pt-24 flex items-center justify-center">
-          <p className="text-muted-foreground">Loading...</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <RefreshCw className="w-5 h-5 animate-spin" />
+          <span>Loading dashboard...</span>
         </div>
       </div>
     );
@@ -94,214 +116,412 @@ const AdminDashboard = () => {
 
   const pendingPros = professionals.filter((p) => p.status === "pending");
   const approvedPros = professionals.filter((p) => p.status === "approved");
+  const rejectedPros = professionals.filter((p) => p.status === "rejected");
   const pendingReviews = reviews.filter((r) => !r.is_approved);
+  const approvedReviews = reviews.filter((r) => r.is_approved);
+  const activeCategories = categories.filter((c) => c.is_active);
+  const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : "0";
+
+  const tabs = [
+    { key: "overview" as const, label: "Overview", icon: BarChart3 },
+    { key: "professionals" as const, label: "Professionals", icon: Users, badge: pendingPros.length },
+    { key: "reviews" as const, label: "Reviews", icon: MessageSquare, badge: pendingReviews.length },
+    { key: "categories" as const, label: "Categories", icon: FolderOpen },
+  ];
+
+  const statusColor = (s: string) => {
+    switch (s) {
+      case "approved": return "bg-accent/10 text-accent border-accent/20";
+      case "pending": return "bg-yellow-500/10 text-yellow-600 border-yellow-500/20";
+      case "rejected": return "bg-destructive/10 text-destructive border-destructive/20";
+      case "suspended": return "bg-orange-500/10 text-orange-600 border-orange-500/20";
+      default: return "bg-secondary text-muted-foreground";
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="pt-24 pb-20">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="font-display text-3xl font-bold text-foreground mb-2">
-              Admin Dashboard
-            </h1>
-            <p className="text-muted-foreground mb-8">
-              Manage professionals, reviews, and platform settings
-            </p>
-          </motion.div>
+      {/* Top bar */}
+      <header className="sticky top-0 z-50 glass border-b border-border">
+        <div className="flex items-center justify-between h-14 px-4 md:px-6 max-w-7xl mx-auto">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+              <MapPin className="w-4 h-4 text-accent-foreground" />
+            </div>
+            <span className="font-display font-bold text-lg text-foreground">NearServ</span>
+            <Badge variant="outline" className="text-xs hidden sm:inline-flex">Admin</Badge>
+          </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {[
-              { label: "Total Professionals", value: professionals.length, icon: Users, color: "text-accent" },
-              { label: "Pending Approval", value: pendingPros.length, icon: Clock, color: "text-gold" },
-              { label: "Approved", value: approvedPros.length, icon: CheckCircle, color: "text-accent" },
-              { label: "Pending Reviews", value: pendingReviews.length, icon: Star, color: "text-gold" },
-            ].map((stat) => (
-              <div key={stat.label} className="bg-card rounded-xl border border-border p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                  <span className="text-sm text-muted-foreground">{stat.label}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 text-xs text-accent">
+              <Activity className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Live</span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => { signOut(); navigate("/"); }} className="gap-1.5 text-muted-foreground">
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+          <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Real-time platform management</p>
+        </motion.div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+                tab === t.key
+                  ? "bg-accent text-accent-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
+            >
+              <t.icon className="w-4 h-4" />
+              {t.label}
+              {t.badge ? (
+                <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full font-bold ${
+                  tab === t.key ? "bg-accent-foreground/20 text-accent-foreground" : "bg-destructive/10 text-destructive"
+                }`}>
+                  {t.badge}
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+
+        {/* OVERVIEW TAB */}
+        {tab === "overview" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { label: "Total Professionals", value: professionals.length, icon: Users, color: "text-accent", sub: `${approvedPros.length} active` },
+                { label: "Pending Approval", value: pendingPros.length, icon: Clock, color: "text-yellow-500", sub: "needs action" },
+                { label: "Total Reviews", value: reviews.length, icon: Star, color: "text-yellow-500", sub: `avg ${avgRating}★` },
+                { label: "Categories", value: activeCategories.length, icon: FolderOpen, color: "text-accent", sub: `${categories.length} total` },
+              ].map((s) => (
+                <div key={s.label} className="bg-card rounded-xl border border-border p-4 md:p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <s.icon className={`w-5 h-5 ${s.color}`} />
+                    <TrendingUp className="w-3.5 h-3.5 text-muted-foreground/50" />
+                  </div>
+                  <p className="text-2xl md:text-3xl font-bold text-foreground">{s.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+                  <p className="text-xs text-accent mt-0.5">{s.sub}</p>
                 </div>
-                <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+              ))}
+            </div>
+
+            {/* Recent activity */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Recent pending professionals */}
+              <div className="bg-card rounded-xl border border-border p-5">
+                <h3 className="font-display font-bold text-foreground mb-4 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-yellow-500" />
+                  Pending Professionals
+                </h3>
+                {pendingPros.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center">No pending approvals 🎉</p>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingPros.slice(0, 5).map((pro) => (
+                      <div key={pro.id} className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{pro.full_name}</p>
+                          <p className="text-xs text-muted-foreground">{pro.categories?.name} · {pro.area}</p>
+                        </div>
+                        <div className="flex gap-1.5 shrink-0">
+                          <Button size="sm" className="h-7 px-2 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => updateProfessionalStatus(pro.id, "approved")}>
+                            <CheckCircle className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button size="sm" variant="destructive" className="h-7 px-2" onClick={() => updateProfessionalStatus(pro.id, "rejected")}>
+                            <XCircle className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
 
-          {/* Tabs */}
-          <div className="flex gap-2 mb-6">
-            {(["professionals", "reviews", "stats"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  tab === t
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-              </button>
-            ))}
-          </div>
+              {/* Recent pending reviews */}
+              <div className="bg-card rounded-xl border border-border p-5">
+                <h3 className="font-display font-bold text-foreground mb-4 flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-yellow-500" />
+                  Pending Reviews
+                </h3>
+                {pendingReviews.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center">No pending reviews 🎉</p>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingReviews.slice(0, 5).map((r) => (
+                      <div key={r.id} className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-medium text-foreground truncate">{r.reviewer_name}</p>
+                            <div className="flex gap-0.5">
+                              {Array.from({ length: r.rating }).map((_, i) => (
+                                <Star key={i} className="w-2.5 h-2.5 text-yellow-500 fill-yellow-500" />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">For: {r.professionals?.full_name}</p>
+                        </div>
+                        <Button size="sm" className="h-7 px-2 bg-accent text-accent-foreground hover:bg-accent/90 shrink-0" onClick={() => approveReview(r.id)}>
+                          <CheckCircle className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
 
-          {/* Professionals Tab */}
-          {tab === "professionals" && (
-            <div className="space-y-4">
-              {professionals.length === 0 ? (
-                <p className="text-muted-foreground text-center py-10">No professionals yet.</p>
-              ) : (
-                professionals.map((pro) => (
+            {/* Stats breakdown */}
+            <div className="bg-card rounded-xl border border-border p-5">
+              <h3 className="font-display font-bold text-foreground mb-4 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-accent" />
+                Professionals by Category
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {categories.map((cat) => {
+                  const count = professionals.filter((p) => p.category_id === cat.id).length;
+                  const approved = professionals.filter((p) => p.category_id === cat.id && p.status === "approved").length;
+                  return (
+                    <div key={cat.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 border border-border/50">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{cat.name}</p>
+                        <p className="text-xs text-muted-foreground">{approved} active</p>
+                      </div>
+                      <span className="text-lg font-bold text-foreground">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* PROFESSIONALS TAB */}
+        {tab === "professionals" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            {/* Filter badges */}
+            <div className="flex gap-2 flex-wrap text-xs">
+              <span className="px-2.5 py-1 rounded-full bg-secondary text-foreground font-medium">All ({professionals.length})</span>
+              <span className="px-2.5 py-1 rounded-full bg-yellow-500/10 text-yellow-600 font-medium">Pending ({pendingPros.length})</span>
+              <span className="px-2.5 py-1 rounded-full bg-accent/10 text-accent font-medium">Approved ({approvedPros.length})</span>
+              <span className="px-2.5 py-1 rounded-full bg-destructive/10 text-destructive font-medium">Rejected ({rejectedPros.length})</span>
+            </div>
+
+            {professionals.length === 0 ? (
+              <p className="text-muted-foreground text-center py-16">No professionals registered yet.</p>
+            ) : (
+              professionals.map((pro) => (
+                <div key={pro.id} className="bg-card rounded-xl border border-border overflow-hidden">
                   <div
-                    key={pro.id}
-                    className="bg-card rounded-xl border border-border p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4"
+                    className="p-4 md:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-3 cursor-pointer"
+                    onClick={() => setExpandedPro(expandedPro === pro.id ? null : pro.id)}
                   >
+                    {/* Avatar */}
+                    <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
+                      {pro.avatar_url ? (
+                        <img src={pro.avatar_url} alt={pro.full_name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Users className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </div>
+
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-foreground">{pro.full_name}</h3>
-                        <Badge
-                          variant={pro.status === "approved" ? "default" : pro.status === "pending" ? "secondary" : "destructive"}
-                        >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-foreground text-sm">{pro.full_name}</h3>
+                        <span className={`px-2 py-0.5 text-xs rounded-full border font-medium ${statusColor(pro.status)}`}>
                           {pro.status}
-                        </Badge>
+                        </span>
                         {pro.verification === "verified" && (
-                          <Shield className="w-4 h-4 text-accent" />
+                          <Shield className="w-3.5 h-3.5 text-accent" />
+                        )}
+                        {pro.is_premium && (
+                          <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {pro.categories?.name} · {pro.area}, {pro.city} · {pro.email}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {pro.categories?.name} · {pro.area}, {pro.city} · {pro.phone}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+
+                    <div className="flex items-center gap-2 shrink-0">
                       {pro.status === "pending" && (
                         <>
-                          <Button
-                            size="sm"
-                            onClick={() => updateProfessionalStatus(pro.id, "approved")}
-                            className="bg-accent text-accent-foreground hover:bg-accent/90 gap-1"
-                          >
-                            <CheckCircle className="w-4 h-4" /> Approve
+                          <Button size="sm" className="h-8 bg-accent text-accent-foreground hover:bg-accent/90 gap-1" onClick={(e) => { e.stopPropagation(); updateProfessionalStatus(pro.id, "approved"); }}>
+                            <CheckCircle className="w-3.5 h-3.5" /> Approve
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => updateProfessionalStatus(pro.id, "rejected")}
-                            className="gap-1"
-                          >
-                            <XCircle className="w-4 h-4" /> Reject
+                          <Button size="sm" variant="destructive" className="h-8 gap-1" onClick={(e) => { e.stopPropagation(); updateProfessionalStatus(pro.id, "rejected"); }}>
+                            <XCircle className="w-3.5 h-3.5" /> Reject
                           </Button>
                         </>
                       )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => navigate(`/professional/${pro.id}`)}
-                        className="gap-1"
-                      >
-                        <Eye className="w-4 h-4" /> View
+                      {expandedPro === pro.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                    </div>
+                  </div>
+
+                  {/* Expanded details */}
+                  {expandedPro === pro.id && (
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} className="border-t border-border px-4 md:px-5 py-4 bg-secondary/30">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Email</p>
+                          <p className="font-medium text-foreground truncate">{pro.email}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Experience</p>
+                          <p className="font-medium text-foreground">{pro.experience_years ? `${pro.experience_years} years` : "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Hourly Rate</p>
+                          <p className="font-medium text-foreground">{pro.hourly_rate ? `₹${pro.hourly_rate}` : "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Coverage</p>
+                          <p className="font-medium text-foreground">{pro.coverage_radius_km} km</p>
+                        </div>
+                      </div>
+                      {pro.description && (
+                        <p className="text-sm text-muted-foreground mb-4">{pro.description}</p>
+                      )}
+                      <div className="flex gap-2 flex-wrap">
+                        {pro.status === "approved" && (
+                          <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => updateProfessionalStatus(pro.id, "suspended")}>
+                            Suspend
+                          </Button>
+                        )}
+                        {pro.status !== "approved" && pro.status !== "pending" && (
+                          <Button size="sm" className="h-8 gap-1 text-xs bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => updateProfessionalStatus(pro.id, "approved")}>
+                            <CheckCircle className="w-3.5 h-3.5" /> Approve
+                          </Button>
+                        )}
+                        {pro.verification !== "verified" ? (
+                          <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => updateVerification(pro.id, "verified")}>
+                            <Shield className="w-3.5 h-3.5" /> Verify
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => updateVerification(pro.id, "unverified")}>
+                            Revoke Verification
+                          </Button>
+                        )}
+                        <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => navigate(`/professional/${pro.id}`)}>
+                          <Eye className="w-3.5 h-3.5" /> View Profile
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              ))
+            )}
+          </motion.div>
+        )}
+
+        {/* REVIEWS TAB */}
+        {tab === "reviews" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            <div className="flex gap-2 flex-wrap text-xs mb-2">
+              <span className="px-2.5 py-1 rounded-full bg-secondary text-foreground font-medium">All ({reviews.length})</span>
+              <span className="px-2.5 py-1 rounded-full bg-yellow-500/10 text-yellow-600 font-medium">Pending ({pendingReviews.length})</span>
+              <span className="px-2.5 py-1 rounded-full bg-accent/10 text-accent font-medium">Approved ({approvedReviews.length})</span>
+            </div>
+
+            {reviews.length === 0 ? (
+              <p className="text-muted-foreground text-center py-16">No reviews yet.</p>
+            ) : (
+              reviews.map((review) => (
+                <div key={review.id} className="bg-card rounded-xl border border-border p-4 md:p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="font-semibold text-foreground text-sm">{review.reviewer_name}</span>
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3 h-3 ${i < review.rating ? "text-yellow-500 fill-yellow-500" : "text-muted-foreground/30"}`}
+                            />
+                          ))}
+                        </div>
+                        <span className={`px-2 py-0.5 text-xs rounded-full border font-medium ${
+                          review.is_approved ? "bg-accent/10 text-accent border-accent/20" : "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
+                        }`}>
+                          {review.is_approved ? "Approved" : "Pending"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        For: {review.professionals?.full_name || "Unknown"} · {new Date(review.created_at).toLocaleDateString()}
+                      </p>
+                      {review.comment && (
+                        <p className="text-sm text-foreground mt-2 leading-relaxed">{review.comment}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-1.5 shrink-0">
+                      {!review.is_approved && (
+                        <Button size="sm" className="h-8 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => approveReview(review.id)}>
+                          Approve
+                        </Button>
+                      )}
+                      <Button size="sm" variant="destructive" className="h-8" onClick={() => deleteReview(review.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          )}
+                </div>
+              ))
+            )}
+          </motion.div>
+        )}
 
-          {/* Reviews Tab */}
-          {tab === "reviews" && (
-            <div className="space-y-4">
-              {reviews.length === 0 ? (
-                <p className="text-muted-foreground text-center py-10">No reviews yet.</p>
-              ) : (
-                reviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className="bg-card rounded-xl border border-border p-5"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold text-foreground text-sm">
-                            {review.reviewer_name}
-                          </span>
-                          <div className="flex gap-0.5">
-                            {Array.from({ length: review.rating }).map((_, i) => (
-                              <Star key={i} className="w-3 h-3 text-gold fill-gold" />
-                            ))}
-                          </div>
-                          <Badge variant={review.is_approved ? "default" : "secondary"}>
-                            {review.is_approved ? "Approved" : "Pending"}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          For: {review.professionals?.full_name || "Unknown"}
-                        </p>
-                        {review.comment && (
-                          <p className="text-sm text-foreground mt-2">{review.comment}</p>
-                        )}
+        {/* CATEGORIES TAB */}
+        {tab === "categories" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            {categories.length === 0 ? (
+              <p className="text-muted-foreground text-center py-16">No categories found.</p>
+            ) : (
+              categories.map((cat) => {
+                const proCount = professionals.filter((p) => p.category_id === cat.id).length;
+                return (
+                  <div key={cat.id} className="bg-card rounded-xl border border-border p-4 md:p-5 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-sm text-foreground">{cat.name}</h3>
+                        <span className={`px-2 py-0.5 text-xs rounded-full border font-medium ${
+                          cat.is_active ? "bg-accent/10 text-accent border-accent/20" : "bg-secondary text-muted-foreground border-border"
+                        }`}>
+                          {cat.is_active ? "Active" : "Inactive"}
+                        </span>
                       </div>
-                      <div className="flex gap-2 shrink-0">
-                        {!review.is_approved && (
-                          <Button size="sm" onClick={() => approveReview(review.id)} className="bg-accent text-accent-foreground hover:bg-accent/90">
-                            Approve
-                          </Button>
-                        )}
-                        <Button size="sm" variant="destructive" onClick={() => deleteReview(review.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {cat.slug} · {proCount} professional{proCount !== 1 ? "s" : ""}
+                        {cat.description && ` · ${cat.description}`}
+                      </p>
                     </div>
+                    <Button
+                      size="sm"
+                      variant={cat.is_active ? "outline" : "default"}
+                      className={`h-8 text-xs ${!cat.is_active ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
+                      onClick={() => toggleCategory(cat.id, cat.is_active)}
+                    >
+                      {cat.is_active ? "Deactivate" : "Activate"}
+                    </Button>
                   </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {/* Stats Tab */}
-          {tab === "stats" && (
-            <div className="bg-card rounded-xl border border-border p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <BarChart3 className="w-5 h-5 text-accent" />
-                <h2 className="font-display text-lg font-bold text-foreground">Platform Stats</h2>
-              </div>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-3">By Category</h3>
-                  <div className="space-y-2">
-                    {Object.entries(
-                      professionals.reduce((acc, p) => {
-                        const cat = p.categories?.name || "Unknown";
-                        acc[cat] = (acc[cat] || 0) + 1;
-                        return acc;
-                      }, {} as Record<string, number>)
-                    ).map(([cat, count]) => (
-                      <div key={cat} className="flex justify-between text-sm">
-                        <span className="text-foreground">{cat}</span>
-                        <span className="font-semibold text-foreground">{count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-3">By Status</h3>
-                  <div className="space-y-2">
-                    {Object.entries(
-                      professionals.reduce((acc, p) => {
-                        acc[p.status] = (acc[p.status] || 0) + 1;
-                        return acc;
-                      }, {} as Record<string, number>)
-                    ).map(([status, count]) => (
-                      <div key={status} className="flex justify-between text-sm">
-                        <span className="text-foreground capitalize">{status}</span>
-                        <span className="font-semibold text-foreground">{count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+                );
+              })
+            )}
+          </motion.div>
+        )}
       </div>
     </div>
   );
