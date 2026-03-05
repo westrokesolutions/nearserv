@@ -44,13 +44,15 @@ const ProfessionalDashboard = () => {
     if (proData) {
       setProfessional(proData as Professional);
 
-      const { data: revData } = await supabase
+      // Fetch reviews in parallel - don't block on it
+      supabase
         .from("reviews")
         .select("*")
         .eq("professional_id", proData.id)
-        .order("created_at", { ascending: false });
-
-      if (revData) setReviews(revData);
+        .order("created_at", { ascending: false })
+        .then(({ data: revData }) => {
+          if (revData) setReviews(revData);
+        });
     }
     setLoading(false);
   }, [user]);
