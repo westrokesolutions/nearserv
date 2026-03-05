@@ -37,6 +37,13 @@ const Navbar = () => {
             </Link>
           )}
           <Link
+            to="/dashboard"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            My Dashboard
+          </Link>
+          <Link
             to="/register"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-colors"
           >
@@ -134,6 +141,15 @@ const Navbar = () => {
                             </Link>
                           </SheetClose>
                         )}
+                        <SheetClose asChild>
+                          <Link
+                            to="/dashboard"
+                            className="inline-flex items-center gap-1.5 text-base font-medium text-foreground hover:text-accent transition-colors"
+                          >
+                            <LayoutDashboard className="w-4 h-4" />
+                            My Dashboard
+                          </Link>
+                        </SheetClose>
                         <SheetClose asChild>
                           <Link
                             to="/register"

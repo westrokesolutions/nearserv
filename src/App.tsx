@@ -11,6 +11,7 @@ import RegisterProfessional from "./pages/RegisterProfessional";
 import Auth from "./pages/Auth";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import ProfessionalDashboard from "./pages/ProfessionalDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/register" element={<RegisterProfessional />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/dashboard" element={<ProfessionalDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
