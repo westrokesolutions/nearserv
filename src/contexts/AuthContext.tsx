@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -19,18 +19,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const adminCacheRef = useRef<Record<string, boolean>>({});
+  const initializedRef = useRef(false);
 
   const checkAdmin = async (userId: string) => {
+    // Cache admin status to avoid repeated DB calls
+    if (adminCacheRef.current[userId] !== undefined) {
+      setIsAdmin(adminCacheRef.current[userId]);
+      return;
+    }
     const { data } = await supabase.rpc("has_role", {
       _user_id: userId,
       _role: "admin",
     });
-    setIsAdmin(!!data);
+    const result = !!data;
+    adminCacheRef.current[userId] = result;
+    setIsAdmin(result);
   };
 
   useEffect(() => {
+    // Get session first, then set up listener
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        await checkAdmin(session.user.id);
+      }
+      setLoading(false);
+      initializedRef.current = true;
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        // Skip if not initialized yet (getSession handles initial state)
+        if (!initializedRef.current) return;
+        
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -41,15 +64,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     );
-
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await checkAdmin(session.user.id);
-      }
-      setLoading(false);
-    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -64,8 +78,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       },
     });
     if (error) throw error;
-
-    // Profile will be created via trigger or on first login
   };
 
   const signIn = async (email: string, password: string) => {
@@ -74,6 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    adminCacheRef.current = {};
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };
