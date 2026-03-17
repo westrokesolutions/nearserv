@@ -140,7 +140,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background safe-bottom mobile-scroll">
       {/* Top bar */}
       <header className="sticky top-0 z-50 glass safe-top border-b border-border">
         <div className="flex items-center justify-between h-14 px-4 md:px-6 max-w-7xl mx-auto safe-x">

@@ -18,8 +18,8 @@ type Professional = Tables<"professionals"> & { categories?: { name: string } | 
 type Review = Tables<"reviews">;
 
 const DashboardSkeleton = () => (
-  <div className="min-h-screen bg-background">
-    <header className="sticky top-0 z-50 glass border-b border-border">
+  <div className="min-h-screen bg-background safe-bottom">
+    <header className="sticky top-0 z-50 glass safe-top border-b border-border">
       <div className="flex items-center justify-between h-14 px-4 md:px-6 max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
           <Skeleton className="w-8 h-8 rounded-lg" />
