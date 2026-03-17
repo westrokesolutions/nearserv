@@ -40,7 +40,7 @@ const ProfessionalProfile = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-24 flex items-center justify-center">
+        <div className="pt-[calc(5rem+var(--safe-area-top))] flex items-center justify-center">
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
