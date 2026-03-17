@@ -162,7 +162,7 @@ const ProfessionalDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background safe-bottom mobile-scroll">
       <header className="sticky top-0 z-50 glass safe-top">
         <div className="flex items-center justify-between h-14 px-4 md:px-6 max-w-7xl mx-auto safe-x">
           <div className="flex items-center gap-3">
