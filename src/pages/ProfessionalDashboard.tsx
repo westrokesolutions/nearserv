@@ -1,21 +1,59 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   User, Star, Clock, CheckCircle, Shield, Eye,
-  MapPin, Phone, Mail, Briefcase, Edit2, RefreshCw,
+  MapPin, Phone, Mail, Briefcase, RefreshCw,
   Activity, LogOut, MessageSquare, TrendingUp,
   Award, Calendar, DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Professional = Tables<"professionals"> & { categories?: { name: string } | null };
 type Review = Tables<"reviews">;
+
+const DashboardSkeleton = () => (
+  <div className="min-h-screen bg-background">
+    <header className="sticky top-0 z-50 glass border-b border-border">
+      <div className="flex items-center justify-between h-14 px-4 md:px-6 max-w-7xl mx-auto">
+        <div className="flex items-center gap-3">
+          <Skeleton className="w-8 h-8 rounded-lg" />
+          <Skeleton className="w-24 h-5" />
+        </div>
+        <Skeleton className="w-20 h-8" />
+      </div>
+    </header>
+    <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
+      <div className="flex items-start gap-4 p-5">
+        <Skeleton className="w-16 h-16 rounded-xl" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="w-48 h-6" />
+          <Skeleton className="w-32 h-4" />
+          <Skeleton className="w-40 h-5" />
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Skeleton className="w-28 h-10 rounded-xl" />
+        <Skeleton className="w-28 h-10 rounded-xl" />
+        <Skeleton className="w-28 h-10 rounded-xl" />
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-card rounded-xl border border-border p-4 space-y-3">
+            <Skeleton className="w-5 h-5" />
+            <Skeleton className="w-16 h-8" />
+            <Skeleton className="w-20 h-3" />
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
 
 const ProfessionalDashboard = () => {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -24,6 +62,7 @@ const ProfessionalDashboard = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"overview" | "reviews" | "profile">("overview");
+  const professionalIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -43,8 +82,8 @@ const ProfessionalDashboard = () => {
 
     if (proData) {
       setProfessional(proData as Professional);
+      professionalIdRef.current = proData.id;
 
-      // Fetch reviews in parallel - don't block on it
       supabase
         .from("reviews")
         .select("*")
@@ -61,28 +100,26 @@ const ProfessionalDashboard = () => {
     if (user) fetchData();
   }, [user, fetchData]);
 
-  // Realtime subscription
+  // Realtime subscription - use ref to avoid re-subscribing
   useEffect(() => {
-    if (!user || !professional) return;
+    if (!user) return;
 
     const channel = supabase
       .channel("pro-dashboard")
       .on("postgres_changes", { event: "*", schema: "public", table: "professionals", filter: `user_id=eq.${user.id}` }, () => fetchData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "reviews", filter: `professional_id=eq.${professional.id}` }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "reviews" }, (payload) => {
+        // Only refetch if it's for our professional
+        if (professionalIdRef.current && (payload.new as any)?.professional_id === professionalIdRef.current) {
+          fetchData();
+        }
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, professional?.id, fetchData]);
+  }, [user?.id, fetchData]);
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <RefreshCw className="w-5 h-5 animate-spin" />
-          <span>Loading dashboard...</span>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (!professional) {
@@ -126,7 +163,6 @@ const ProfessionalDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top bar */}
       <header className="sticky top-0 z-50 glass border-b border-border">
         <div className="flex items-center justify-between h-14 px-4 md:px-6 max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
@@ -136,7 +172,6 @@ const ProfessionalDashboard = () => {
             <span className="font-display font-bold text-lg text-foreground">NearServ</span>
             <Badge variant="outline" className="text-xs hidden sm:inline-flex">Professional</Badge>
           </div>
-
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 text-xs text-accent">
               <Activity className="w-3.5 h-3.5" />
@@ -154,7 +189,6 @@ const ProfessionalDashboard = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
-        {/* Profile header card */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-xl border border-border p-5 md:p-6 mb-6">
           <div className="flex flex-col sm:flex-row items-start gap-4">
             <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
@@ -167,12 +201,8 @@ const ProfessionalDashboard = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <h1 className="font-display text-xl md:text-2xl font-bold text-foreground">{professional.full_name}</h1>
-                {professional.verification === "verified" && (
-                  <Shield className="w-4 h-4 text-accent" />
-                )}
-                {professional.is_premium && (
-                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                )}
+                {professional.verification === "verified" && <Shield className="w-4 h-4 text-accent" />}
+                {professional.is_premium && <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
               </div>
               <p className="text-sm text-muted-foreground">{professional.headline || professional.categories?.name}</p>
               <div className="flex items-center gap-3 mt-2 flex-wrap">
@@ -191,7 +221,6 @@ const ProfessionalDashboard = () => {
           </div>
         </motion.div>
 
-        {/* Tabs */}
         <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
           {tabs.map((t) => (
             <button
@@ -216,16 +245,14 @@ const ProfessionalDashboard = () => {
           ))}
         </div>
 
-        {/* OVERVIEW TAB */}
         {tab === "overview" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-            {/* Status banner */}
             {professional.status === "pending" && (
               <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 flex items-start gap-3">
                 <Clock className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
                 <div>
                   <p className="font-semibold text-foreground text-sm">Profile Under Review</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Your profile is being reviewed by our team. You'll be notified once it's approved.</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Your profile is being reviewed by our team.</p>
                 </div>
               </div>
             )}
@@ -234,12 +261,11 @@ const ProfessionalDashboard = () => {
                 <Clock className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
                 <div>
                   <p className="font-semibold text-foreground text-sm">Profile Rejected</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Your profile was not approved. Please contact support for more details.</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Please contact support for more details.</p>
                 </div>
               </div>
             )}
 
-            {/* Stats grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { label: "Rating", value: `${avgRating}★`, icon: Star, color: "text-yellow-500", sub: `${totalReviews} reviews` },
@@ -259,14 +285,12 @@ const ProfessionalDashboard = () => {
               ))}
             </div>
 
-            {/* Recent reviews */}
             <div className="bg-card rounded-xl border border-border p-5">
               <h3 className="font-display font-bold text-foreground mb-4 flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-accent" />
-                Recent Reviews
+                <MessageSquare className="w-4 h-4 text-accent" /> Recent Reviews
               </h3>
               {approvedReviews.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">No reviews yet. Once clients review your work, they'll appear here.</p>
+                <p className="text-sm text-muted-foreground py-4 text-center">No reviews yet.</p>
               ) : (
                 <div className="space-y-3">
                   {approvedReviews.slice(0, 5).map((r) => (
@@ -289,7 +313,6 @@ const ProfessionalDashboard = () => {
           </motion.div>
         )}
 
-        {/* REVIEWS TAB */}
         {tab === "reviews" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             <div className="flex gap-2 flex-wrap text-xs mb-2">
@@ -297,7 +320,6 @@ const ProfessionalDashboard = () => {
               <span className="px-2.5 py-1 rounded-full bg-accent/10 text-accent font-medium">Published ({approvedReviews.length})</span>
               <span className="px-2.5 py-1 rounded-full bg-yellow-500/10 text-yellow-600 font-medium">Pending ({reviews.length - approvedReviews.length})</span>
             </div>
-
             {reviews.length === 0 ? (
               <p className="text-muted-foreground text-center py-16">No reviews received yet.</p>
             ) : (
@@ -324,7 +346,6 @@ const ProfessionalDashboard = () => {
           </motion.div>
         )}
 
-        {/* PROFILE TAB */}
         {tab === "profile" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             <div className="bg-card rounded-xl border border-border p-5 md:p-6">
@@ -349,14 +370,12 @@ const ProfessionalDashboard = () => {
                   </div>
                 ))}
               </div>
-
               {professional.headline && (
                 <div className="mt-4 p-3 rounded-lg bg-secondary/50 border border-border/50">
                   <p className="text-xs text-muted-foreground mb-1">Headline</p>
                   <p className="text-sm font-medium text-foreground">{professional.headline}</p>
                 </div>
               )}
-
               {professional.description && (
                 <div className="mt-4 p-3 rounded-lg bg-secondary/50 border border-border/50">
                   <p className="text-xs text-muted-foreground mb-1">Description</p>
@@ -369,24 +388,17 @@ const ProfessionalDashboard = () => {
               <h3 className="font-display font-bold text-foreground mb-2">Verification & Status</h3>
               <div className="flex gap-3 flex-wrap">
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border font-medium ${currentStatus.color}`}>
-                  <StatusIcon className="w-3 h-3" />
-                  {currentStatus.label}
+                  <StatusIcon className="w-3 h-3" /> {currentStatus.label}
                 </span>
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border font-medium ${
-                  professional.verification === "verified"
-                    ? "bg-accent/10 text-accent border-accent/20"
-                    : "bg-secondary text-muted-foreground border-border"
+                  professional.verification === "verified" ? "bg-accent/10 text-accent border-accent/20" : "bg-secondary text-muted-foreground border-border"
                 }`}>
-                  <Shield className="w-3 h-3" />
-                  {professional.verification === "verified" ? "Verified" : "Not Verified"}
+                  <Shield className="w-3 h-3" /> {professional.verification === "verified" ? "Verified" : "Not Verified"}
                 </span>
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border font-medium ${
-                  professional.is_premium
-                    ? "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
-                    : "bg-secondary text-muted-foreground border-border"
+                  professional.is_premium ? "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" : "bg-secondary text-muted-foreground border-border"
                 }`}>
-                  <Star className="w-3 h-3" />
-                  {professional.is_premium ? "Premium" : "Standard"}
+                  <Star className="w-3 h-3" /> {professional.is_premium ? "Premium" : "Standard"}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-3">
