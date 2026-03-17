@@ -177,7 +177,7 @@ const RegisterProfessional = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="pt-24 pb-20">
+      <div className="pt-[calc(5rem+var(--safe-area-top))] pb-20">
         <div className="container mx-auto px-4 max-w-2xl">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
             <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">

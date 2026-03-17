@@ -163,8 +163,8 @@ const ProfessionalDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 glass border-b border-border">
-        <div className="flex items-center justify-between h-14 px-4 md:px-6 max-w-7xl mx-auto">
+      <header className="sticky top-0 z-50 glass safe-top">
+        <div className="flex items-center justify-between h-14 px-4 md:px-6 max-w-7xl mx-auto safe-x">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
               <MapPin className="w-4 h-4 text-accent-foreground" />
