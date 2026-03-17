@@ -19,7 +19,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative bg-card pt-24 pb-0 lg:pt-28 overflow-hidden">
+    <section className="relative bg-card pt-[calc(5rem+var(--safe-area-top))] pb-0 lg:pt-[calc(7rem+var(--safe-area-top))] overflow-hidden">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left content */}

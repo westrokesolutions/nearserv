@@ -40,7 +40,7 @@ const ProfessionalProfile = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-24 flex items-center justify-center">
+        <div className="pt-[calc(5rem+var(--safe-area-top))] flex items-center justify-center">
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -66,7 +66,7 @@ const ProfessionalProfile = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="pt-24 pb-20">
+      <div className="pt-[calc(5rem+var(--safe-area-top))] pb-20">
         <div className="container mx-auto px-4 max-w-4xl">
           <button
             onClick={() => navigate(-1)}

@@ -65,7 +65,7 @@ const SearchPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="pt-24 pb-20">
+      <div className="pt-[calc(5rem+var(--safe-area-top))] pb-20">
         <div className="container mx-auto px-4">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
             <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
