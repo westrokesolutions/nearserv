@@ -640,7 +640,46 @@ const AdminDashboard = () => {
         {/* CATEGORIES TAB */}
         {tab === "categories" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            {/* Create category button */}
+            <div className="flex justify-end">
+              <Dialog open={showCreateCat} onOpenChange={setShowCreateCat}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="h-8 gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90">
+                    <Plus className="w-4 h-4" /> Add Category
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="font-display">Create Category</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Name *</Label>
+                      <Input placeholder="e.g. Plumbing" value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Slug</Label>
+                      <Input placeholder="auto-generated" value={newCat.slug} onChange={(e) => setNewCat({ ...newCat, slug: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Icon (lucide name)</Label>
+                      <Input placeholder="e.g. wrench, zap, camera" value={newCat.icon} onChange={(e) => setNewCat({ ...newCat, icon: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Description</Label>
+                      <Textarea placeholder="Brief description..." value={newCat.description} onChange={(e) => setNewCat({ ...newCat, description: e.target.value })} rows={2} />
+                    </div>
+                    <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={createCategory} disabled={creating}>
+                      {creating ? "Creating..." : "Create Category"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
             {categories.length === 0 ? (
+              <p className="text-muted-foreground text-center py-16">No categories found.</p>
+            ) : (
               <p className="text-muted-foreground text-center py-16">No categories found.</p>
             ) : (
               categories.map((cat) => {
