@@ -123,6 +123,61 @@ const AdminDashboard = () => {
     else toast({ title: `Category ${!isActive ? "activated" : "deactivated"}` });
   };
 
+  const createProfessional = async () => {
+    if (!newPro.full_name || !newPro.email || !newPro.phone || !newPro.category_id || !newPro.area) {
+      toast({ title: "Error", description: "Please fill all required fields", variant: "destructive" });
+      return;
+    }
+    setCreating(true);
+    const { error } = await supabase.from("professionals").insert({
+      full_name: newPro.full_name,
+      email: newPro.email,
+      phone: newPro.phone,
+      category_id: newPro.category_id,
+      area: newPro.area,
+      city: newPro.city || "Vasai",
+      description: newPro.description || null,
+      headline: newPro.headline || null,
+      experience_years: newPro.experience_years ? parseInt(newPro.experience_years) : null,
+      hourly_rate: newPro.hourly_rate ? parseInt(newPro.hourly_rate) : null,
+      coverage_radius_km: newPro.coverage_radius_km ? parseInt(newPro.coverage_radius_km) : 5,
+      status: "approved",
+    });
+    setCreating(false);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Professional created successfully" });
+      setShowCreatePro(false);
+      setNewPro({ full_name: "", email: "", phone: "", category_id: "", area: "", city: "Vasai", description: "", headline: "", experience_years: "", hourly_rate: "", coverage_radius_km: "5" });
+      fetchData();
+    }
+  };
+
+  const createCategory = async () => {
+    if (!newCat.name) {
+      toast({ title: "Error", description: "Category name is required", variant: "destructive" });
+      return;
+    }
+    setCreating(true);
+    const slug = newCat.slug || newCat.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const { error } = await supabase.from("categories").insert({
+      name: newCat.name,
+      slug,
+      icon: newCat.icon || null,
+      description: newCat.description || null,
+    });
+    setCreating(false);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Category created successfully" });
+      setShowCreateCat(false);
+      setNewCat({ name: "", slug: "", icon: "", description: "" });
+      fetchData();
+    }
+  };
+
   if (authLoading || (loading && professionals.length === 0)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
