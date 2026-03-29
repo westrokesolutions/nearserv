@@ -141,7 +141,7 @@ const RegisterProfessional = () => {
           );
           const data = await response.json();
           const address = data.address || {};
-          const city = address.city || address.town || address.village || address.county || "Vasai";
+          const city = address.city || address.town || address.village || address.state_district || address.county || "";
           const area = address.suburb || address.neighbourhood || address.hamlet || address.road || "";
           setForm((prev) => ({
             ...prev,
