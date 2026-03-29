@@ -5,13 +5,14 @@ import {
   User, Star, Clock, CheckCircle, Shield, Eye,
   MapPin, Phone, Mail, Briefcase, RefreshCw,
   Activity, LogOut, MessageSquare, TrendingUp,
-  Award, Calendar, DollarSign,
+  Award, Calendar, DollarSign, Camera, CreditCard, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Professional = Tables<"professionals"> & { categories?: { name: string } | null };
