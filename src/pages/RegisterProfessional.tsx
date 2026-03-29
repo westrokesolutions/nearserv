@@ -104,13 +104,13 @@ const RegisterProfessional = () => {
           );
           const data = await response.json();
           const address = data.address || {};
-          const city = address.city || address.town || address.village || address.county || "Vasai";
+          const city = address.city || address.town || address.village || address.state_district || address.county || "";
           const area = address.suburb || address.neighbourhood || address.hamlet || address.road || "";
           setForm((prev) => ({ ...prev, city, area }));
         } catch {}
       },
       () => {},
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   }, []);
 
@@ -141,7 +141,7 @@ const RegisterProfessional = () => {
           );
           const data = await response.json();
           const address = data.address || {};
-          const city = address.city || address.town || address.village || address.county || "Vasai";
+          const city = address.city || address.town || address.village || address.state_district || address.county || "";
           const area = address.suburb || address.neighbourhood || address.hamlet || address.road || "";
           setForm((prev) => ({
             ...prev,
@@ -159,7 +159,7 @@ const RegisterProfessional = () => {
         setDetectingLocation(false);
         toast({ title: "Location access denied", description: "Please enter your location manually.", variant: "destructive" });
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
