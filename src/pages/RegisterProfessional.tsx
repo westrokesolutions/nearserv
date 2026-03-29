@@ -159,7 +159,7 @@ const RegisterProfessional = () => {
         setDetectingLocation(false);
         toast({ title: "Location access denied", description: "Please enter your location manually.", variant: "destructive" });
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
