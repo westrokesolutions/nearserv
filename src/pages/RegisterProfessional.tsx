@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
   User, Briefcase, FileText, MapPin, Camera,
   ArrowRight, ArrowLeft, Check, ChevronRight,
+  LocateFixed, Loader2, CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ const steps = [
   { label: "Category", icon: Briefcase },
   { label: "Experience", icon: FileText },
   { label: "Location", icon: MapPin },
+  { label: "Verification", icon: CreditCard },
   { label: "Photo", icon: Camera },
 ];
 
@@ -37,6 +39,11 @@ interface FormData {
   coverageRadius: string;
   photoFile: File | null;
   photoPreview: string | null;
+  aadhaarNumber: string;
+  aadhaarFrontFile: File | null;
+  aadhaarFrontPreview: string | null;
+  aadhaarBackFile: File | null;
+  aadhaarBackPreview: string | null;
 }
 
 const initialForm: FormData = {
@@ -45,7 +52,12 @@ const initialForm: FormData = {
   experience: "", description: "", hourlyRate: "",
   city: "Vasai", area: "", coverageRadius: "5",
   photoFile: null, photoPreview: null,
+  aadhaarNumber: "",
+  aadhaarFrontFile: null, aadhaarFrontPreview: null,
+  aadhaarBackFile: null, aadhaarBackPreview: null,
 };
+
+const LAST_STEP = steps.length - 1;
 
 const RegisterProfessional = () => {
   const [step, setStep] = useState(0);
@@ -53,10 +65,10 @@ const RegisterProfessional = () => {
   const [categories, setCategories] = useState<Tables<"categories">[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [direction, setDirection] = useState(1);
+  const [detectingLocation, setDetectingLocation] = useState(false);
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
-  // Redirect to auth if not logged in
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth?redirect=/register");
@@ -79,6 +91,11 @@ const RegisterProfessional = () => {
     }
   }, [user]);
 
+  // Auto-detect location on mount
+  useEffect(() => {
+    detectCurrentLocation();
+  }, []);
+
   if (loading || !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -90,30 +107,79 @@ const RegisterProfessional = () => {
   const update = (field: keyof FormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
+  const detectCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast({ title: "Geolocation not supported", description: "Your browser doesn't support location detection.", variant: "destructive" });
+      return;
+    }
+    setDetectingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+            { headers: { "Accept-Language": "en" } }
+          );
+          const data = await response.json();
+          const address = data.address || {};
+          const city = address.city || address.town || address.village || address.county || "Vasai";
+          const area = address.suburb || address.neighbourhood || address.hamlet || address.road || "";
+          setForm((prev) => ({
+            ...prev,
+            city: city,
+            area: area,
+          }));
+          toast({ title: "Location detected", description: `${area}, ${city}` });
+        } catch {
+          toast({ title: "Could not resolve location", variant: "destructive" });
+        } finally {
+          setDetectingLocation(false);
+        }
+      },
+      () => {
+        setDetectingLocation(false);
+        toast({ title: "Location access denied", description: "Please enter your location manually.", variant: "destructive" });
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   const canNext = (): boolean => {
     switch (step) {
       case 0: return !!(form.fullName.trim() && form.email.trim() && form.phone.trim());
       case 1: return !!form.categoryId;
       case 2: return !!(form.experience && form.description.trim());
       case 3: return !!(form.city.trim() && form.area.trim());
-      case 4: return true;
+      case 4: return true; // Aadhaar is optional
+      case 5: return true;
       default: return false;
     }
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setForm((prev) => ({ ...prev, photoFile: file }));
-      const reader = new FileReader();
-      reader.onloadend = () => update("photoPreview", reader.result as string);
-      reader.readAsDataURL(file);
-    }
+  const handleFileChange = (field: "photoFile" | "aadhaarFrontFile" | "aadhaarBackFile", previewField: "photoPreview" | "aadhaarFrontPreview" | "aadhaarBackPreview") =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        setForm((prev) => ({ ...prev, [field]: file }));
+        const reader = new FileReader();
+        reader.onloadend = () => setForm((prev) => ({ ...prev, [previewField]: reader.result as string }));
+        reader.readAsDataURL(file);
+      }
+    };
+
+  const uploadFile = async (file: File, bucket: string, folder: string): Promise<string | null> => {
+    const ext = file.name.split(".").pop();
+    const path = `${folder}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from(bucket).upload(path, file);
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
+    return urlData.publicUrl;
   };
 
   const handleSubmit = async () => {
     if (!user) {
-      toast({ title: "Please sign in first", description: "You need an account to register as a professional.", variant: "destructive" });
+      toast({ title: "Please sign in first", variant: "destructive" });
       navigate("/auth");
       return;
     }
@@ -121,16 +187,17 @@ const RegisterProfessional = () => {
     setSubmitting(true);
     try {
       let avatarUrl: string | null = null;
+      let aadhaarFrontUrl: string | null = null;
+      let aadhaarBackUrl: string | null = null;
 
       if (form.photoFile) {
-        const ext = form.photoFile.name.split(".").pop();
-        const path = `${user.id}/${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(path, form.photoFile);
-        if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-        avatarUrl = urlData.publicUrl;
+        avatarUrl = await uploadFile(form.photoFile, "avatars", user.id);
+      }
+      if (form.aadhaarFrontFile) {
+        aadhaarFrontUrl = await uploadFile(form.aadhaarFrontFile, "documents", user.id);
+      }
+      if (form.aadhaarBackFile) {
+        aadhaarBackUrl = await uploadFile(form.aadhaarBackFile, "documents", user.id);
       }
 
       const { error } = await supabase.from("professionals").insert({
@@ -147,7 +214,10 @@ const RegisterProfessional = () => {
         area: form.area,
         coverage_radius_km: parseInt(form.coverageRadius),
         avatar_url: avatarUrl,
-      });
+        aadhaar_number: form.aadhaarNumber || null,
+        aadhaar_front_url: aadhaarFrontUrl,
+        aadhaar_back_url: aadhaarBackUrl,
+      } as any);
 
       if (error) throw error;
 
@@ -169,7 +239,7 @@ const RegisterProfessional = () => {
     exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
   };
 
-  const goNext = () => { setDirection(1); setStep((s) => Math.min(s + 1, 4)); };
+  const goNext = () => { setDirection(1); setStep((s) => Math.min(s + 1, LAST_STEP)); };
   const goBack = () => { setDirection(-1); setStep((s) => Math.max(s - 1, 0)); };
 
   const selectedCategory = categories.find((c) => c.id === form.categoryId);
@@ -189,12 +259,12 @@ const RegisterProfessional = () => {
           </motion.div>
 
           {/* Step indicator */}
-          <div className="flex items-center justify-center gap-1 mb-10">
+          <div className="flex items-center justify-center gap-1 mb-10 overflow-x-auto pb-1">
             {steps.map((s, i) => (
               <div key={s.label} className="flex items-center">
                 <button
                   onClick={() => { if (i < step) { setDirection(-1); setStep(i); } }}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                  className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                     i === step
                       ? "bg-accent text-accent-foreground"
                       : i < step
@@ -205,7 +275,7 @@ const RegisterProfessional = () => {
                   {i < step ? <Check className="w-3.5 h-3.5" /> : <s.icon className="w-3.5 h-3.5" />}
                   <span className="hidden sm:inline">{s.label}</span>
                 </button>
-                {i < steps.length - 1 && <ChevronRight className="w-4 h-4 text-muted-foreground/40 mx-1" />}
+                {i < steps.length - 1 && <ChevronRight className="w-4 h-4 text-muted-foreground/40 mx-0.5" />}
               </div>
             ))}
           </div>
@@ -297,9 +367,26 @@ const RegisterProfessional = () => {
 
                 {step === 3 && (
                   <div className="space-y-5">
-                    <div>
-                      <h2 className="font-display text-xl font-bold text-foreground mb-1">Location & Coverage</h2>
-                      <p className="text-sm text-muted-foreground">Where do you provide your services?</p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="font-display text-xl font-bold text-foreground mb-1">Location & Coverage</h2>
+                        <p className="text-sm text-muted-foreground">Where do you provide your services?</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 shrink-0"
+                        onClick={detectCurrentLocation}
+                        disabled={detectingLocation}
+                      >
+                        {detectingLocation ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <LocateFixed className="w-3.5 h-3.5" />
+                        )}
+                        <span className="hidden sm:inline">{detectingLocation ? "Detecting..." : "Use My Location"}</span>
+                      </Button>
                     </div>
                     <div className="space-y-4">
                       <div>
@@ -324,6 +411,71 @@ const RegisterProfessional = () => {
                 {step === 4 && (
                   <div className="space-y-5">
                     <div>
+                      <h2 className="font-display text-xl font-bold text-foreground mb-1">Identity Verification</h2>
+                      <p className="text-sm text-muted-foreground">Upload your Aadhaar card for admin verification (optional but recommended)</p>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="aadhaarNumber">Aadhaar Card Number</Label>
+                        <Input
+                          id="aadhaarNumber"
+                          placeholder="e.g. 1234 5678 9012"
+                          value={form.aadhaarNumber}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9\s]/g, "").slice(0, 14);
+                            update("aadhaarNumber", val);
+                          }}
+                          className="mt-1.5"
+                          maxLength={14}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">12-digit Aadhaar number</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <Label>Aadhaar Front Photo</Label>
+                          <div className="mt-1.5">
+                            {form.aadhaarFrontPreview ? (
+                              <img src={form.aadhaarFrontPreview} alt="Aadhaar front" className="w-full h-32 rounded-xl object-cover border border-border" />
+                            ) : (
+                              <div className="w-full h-32 rounded-xl bg-secondary border-2 border-dashed border-border flex items-center justify-center">
+                                <CreditCard className="w-8 h-8 text-muted-foreground/40" />
+                              </div>
+                            )}
+                            <label className="cursor-pointer mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-foreground text-xs font-medium hover:bg-muted transition-colors border border-border w-full justify-center">
+                              <Camera className="w-3.5 h-3.5" />
+                              {form.aadhaarFrontPreview ? "Change" : "Upload Front"}
+                              <input type="file" accept="image/*" onChange={handleFileChange("aadhaarFrontFile", "aadhaarFrontPreview")} className="hidden" />
+                            </label>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label>Aadhaar Back Photo</Label>
+                          <div className="mt-1.5">
+                            {form.aadhaarBackPreview ? (
+                              <img src={form.aadhaarBackPreview} alt="Aadhaar back" className="w-full h-32 rounded-xl object-cover border border-border" />
+                            ) : (
+                              <div className="w-full h-32 rounded-xl bg-secondary border-2 border-dashed border-border flex items-center justify-center">
+                                <CreditCard className="w-8 h-8 text-muted-foreground/40" />
+                              </div>
+                            )}
+                            <label className="cursor-pointer mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-foreground text-xs font-medium hover:bg-muted transition-colors border border-border w-full justify-center">
+                              <Camera className="w-3.5 h-3.5" />
+                              {form.aadhaarBackPreview ? "Change" : "Upload Back"}
+                              <input type="file" accept="image/*" onChange={handleFileChange("aadhaarBackFile", "aadhaarBackPreview")} className="hidden" />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Your Aadhaar details will only be visible to admins for verification purposes.</p>
+                    </div>
+                  </div>
+                )}
+
+                {step === 5 && (
+                  <div className="space-y-5">
+                    <div>
                       <h2 className="font-display text-xl font-bold text-foreground mb-1">Profile Photo</h2>
                       <p className="text-sm text-muted-foreground">A great photo builds trust with customers</p>
                     </div>
@@ -338,7 +490,7 @@ const RegisterProfessional = () => {
                       <label className="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary text-foreground text-sm font-medium hover:bg-muted transition-colors border border-border">
                         <Camera className="w-4 h-4" />
                         {form.photoPreview ? "Change Photo" : "Upload Photo"}
-                        <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+                        <input type="file" accept="image/*" onChange={handleFileChange("photoFile", "photoPreview")} className="hidden" />
                       </label>
                       <p className="text-xs text-muted-foreground">JPG, PNG. Max 5MB. You can skip and add later.</p>
                     </div>
@@ -354,6 +506,8 @@ const RegisterProfessional = () => {
                         <span className="text-foreground font-medium">{form.experience ? `${form.experience} years` : "—"}</span>
                         <span className="text-muted-foreground">Location</span>
                         <span className="text-foreground font-medium">{form.area && form.city ? `${form.area}, ${form.city}` : "—"}</span>
+                        <span className="text-muted-foreground">Aadhaar</span>
+                        <span className="text-foreground font-medium">{form.aadhaarNumber ? "Provided" : "Not provided"}</span>
                       </div>
                     </div>
                   </div>
@@ -368,7 +522,7 @@ const RegisterProfessional = () => {
               <ArrowLeft className="w-4 h-4" /> Back
             </Button>
             <span className="text-sm text-muted-foreground">Step {step + 1} of {steps.length}</span>
-            {step < 4 ? (
+            {step < LAST_STEP ? (
               <Button onClick={goNext} disabled={!canNext()} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
                 Next <ArrowRight className="w-4 h-4" />
               </Button>
