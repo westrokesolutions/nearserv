@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
+import ProfileTab from "@/components/ProfileTab";
 
 type Professional = Tables<"professionals"> & { categories?: { name: string } | null };
 type Review = Tables<"reviews">;
