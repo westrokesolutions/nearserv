@@ -5,14 +5,16 @@ import {
   User, Star, Clock, CheckCircle, Shield, Eye,
   MapPin, Phone, Mail, Briefcase, RefreshCw,
   Activity, LogOut, MessageSquare, TrendingUp,
-  Award, Calendar, DollarSign,
+  Award, Calendar, DollarSign, Camera, CreditCard, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
+import ProfileTab from "@/components/ProfileTab";
 
 type Professional = Tables<"professionals"> & { categories?: { name: string } | null };
 type Review = Tables<"reviews">;
@@ -347,65 +349,13 @@ const ProfessionalDashboard = () => {
         )}
 
         {tab === "profile" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-            <div className="bg-card rounded-xl border border-border p-5 md:p-6">
-              <h3 className="font-display font-bold text-foreground mb-4">Profile Information</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  { icon: User, label: "Full Name", value: professional.full_name },
-                  { icon: Mail, label: "Email", value: professional.email },
-                  { icon: Phone, label: "Phone", value: professional.phone },
-                  { icon: Briefcase, label: "Category", value: professional.categories?.name || "N/A" },
-                  { icon: MapPin, label: "Area", value: `${professional.area}, ${professional.city}` },
-                  { icon: Calendar, label: "Experience", value: professional.experience_years ? `${professional.experience_years} years` : "N/A" },
-                  { icon: DollarSign, label: "Hourly Rate", value: professional.hourly_rate ? `₹${professional.hourly_rate}` : "N/A" },
-                  { icon: MapPin, label: "Coverage", value: `${professional.coverage_radius_km || 5} km radius` },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50 border border-border/50">
-                    <item.icon className="w-4 h-4 text-accent mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">{item.label}</p>
-                      <p className="text-sm font-medium text-foreground">{item.value}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {professional.headline && (
-                <div className="mt-4 p-3 rounded-lg bg-secondary/50 border border-border/50">
-                  <p className="text-xs text-muted-foreground mb-1">Headline</p>
-                  <p className="text-sm font-medium text-foreground">{professional.headline}</p>
-                </div>
-              )}
-              {professional.description && (
-                <div className="mt-4 p-3 rounded-lg bg-secondary/50 border border-border/50">
-                  <p className="text-xs text-muted-foreground mb-1">Description</p>
-                  <p className="text-sm text-foreground leading-relaxed">{professional.description}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-card rounded-xl border border-border p-5 md:p-6">
-              <h3 className="font-display font-bold text-foreground mb-2">Verification & Status</h3>
-              <div className="flex gap-3 flex-wrap">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border font-medium ${currentStatus.color}`}>
-                  <StatusIcon className="w-3 h-3" /> {currentStatus.label}
-                </span>
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border font-medium ${
-                  professional.verification === "verified" ? "bg-accent/10 text-accent border-accent/20" : "bg-secondary text-muted-foreground border-border"
-                }`}>
-                  <Shield className="w-3 h-3" /> {professional.verification === "verified" ? "Verified" : "Not Verified"}
-                </span>
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border font-medium ${
-                  professional.is_premium ? "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" : "bg-secondary text-muted-foreground border-border"
-                }`}>
-                  <Star className="w-3 h-3" /> {professional.is_premium ? "Premium" : "Standard"}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3">
-                Member since {new Date(professional.created_at).toLocaleDateString()}
-              </p>
-            </div>
-          </motion.div>
+          <ProfileTab
+            professional={professional}
+            currentStatus={currentStatus}
+            StatusIcon={StatusIcon}
+            user={user}
+            onPhotoUpdated={fetchData}
+          />
         )}
       </div>
     </div>
