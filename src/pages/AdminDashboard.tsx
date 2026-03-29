@@ -473,7 +473,6 @@ const AdminDashboard = () => {
                 </DialogContent>
               </Dialog>
             </div>
-            </div>
 
             {professionals.length === 0 ? (
               <p className="text-muted-foreground text-center py-16">No professionals registered yet.</p>
