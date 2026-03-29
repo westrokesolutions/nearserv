@@ -680,8 +680,6 @@ const AdminDashboard = () => {
             {categories.length === 0 ? (
               <p className="text-muted-foreground text-center py-16">No categories found.</p>
             ) : (
-              <p className="text-muted-foreground text-center py-16">No categories found.</p>
-            ) : (
               categories.map((cat) => {
                 const proCount = professionals.filter((p) => p.category_id === cat.id).length;
                 return (
