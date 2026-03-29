@@ -5,10 +5,15 @@ import {
   Users, CheckCircle, XCircle, Clock, Shield, Star,
   BarChart3, Eye, Trash2, RefreshCw, TrendingUp,
   FolderOpen, MessageSquare, Activity, LogOut,
-  MapPin, ChevronDown, ChevronUp,
+  MapPin, ChevronDown, ChevronUp, Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -27,6 +32,21 @@ const AdminDashboard = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedPro, setExpandedPro] = useState<string | null>(null);
+  const [showCreatePro, setShowCreatePro] = useState(false);
+  const [showCreateCat, setShowCreateCat] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  // Create professional form state
+  const [newPro, setNewPro] = useState({
+    full_name: "", email: "", phone: "", category_id: "",
+    area: "", city: "Vasai", description: "", headline: "",
+    experience_years: "", hourly_rate: "", coverage_radius_km: "5",
+  });
+
+  // Create category form state
+  const [newCat, setNewCat] = useState({
+    name: "", slug: "", icon: "", description: "",
+  });
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -101,6 +121,61 @@ const AdminDashboard = () => {
     const { error } = await supabase.from("categories").update({ is_active: !isActive }).eq("id", id);
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
     else toast({ title: `Category ${!isActive ? "activated" : "deactivated"}` });
+  };
+
+  const createProfessional = async () => {
+    if (!newPro.full_name || !newPro.email || !newPro.phone || !newPro.category_id || !newPro.area) {
+      toast({ title: "Error", description: "Please fill all required fields", variant: "destructive" });
+      return;
+    }
+    setCreating(true);
+    const { error } = await supabase.from("professionals").insert({
+      full_name: newPro.full_name,
+      email: newPro.email,
+      phone: newPro.phone,
+      category_id: newPro.category_id,
+      area: newPro.area,
+      city: newPro.city || "Vasai",
+      description: newPro.description || null,
+      headline: newPro.headline || null,
+      experience_years: newPro.experience_years ? parseInt(newPro.experience_years) : null,
+      hourly_rate: newPro.hourly_rate ? parseInt(newPro.hourly_rate) : null,
+      coverage_radius_km: newPro.coverage_radius_km ? parseInt(newPro.coverage_radius_km) : 5,
+      status: "approved",
+    });
+    setCreating(false);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Professional created successfully" });
+      setShowCreatePro(false);
+      setNewPro({ full_name: "", email: "", phone: "", category_id: "", area: "", city: "Vasai", description: "", headline: "", experience_years: "", hourly_rate: "", coverage_radius_km: "5" });
+      fetchData();
+    }
+  };
+
+  const createCategory = async () => {
+    if (!newCat.name) {
+      toast({ title: "Error", description: "Category name is required", variant: "destructive" });
+      return;
+    }
+    setCreating(true);
+    const slug = newCat.slug || newCat.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const { error } = await supabase.from("categories").insert({
+      name: newCat.name,
+      slug,
+      icon: newCat.icon || null,
+      description: newCat.description || null,
+    });
+    setCreating(false);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Category created successfully" });
+      setShowCreateCat(false);
+      setNewCat({ name: "", slug: "", icon: "", description: "" });
+      fetchData();
+    }
   };
 
   if (authLoading || (loading && professionals.length === 0)) {
@@ -313,12 +388,90 @@ const AdminDashboard = () => {
         {/* PROFESSIONALS TAB */}
         {tab === "professionals" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-            {/* Filter badges */}
-            <div className="flex gap-2 flex-wrap text-xs">
-              <span className="px-2.5 py-1 rounded-full bg-secondary text-foreground font-medium">All ({professionals.length})</span>
-              <span className="px-2.5 py-1 rounded-full bg-yellow-500/10 text-yellow-600 font-medium">Pending ({pendingPros.length})</span>
-              <span className="px-2.5 py-1 rounded-full bg-accent/10 text-accent font-medium">Approved ({approvedPros.length})</span>
-              <span className="px-2.5 py-1 rounded-full bg-destructive/10 text-destructive font-medium">Rejected ({rejectedPros.length})</span>
+            {/* Header with create button */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex gap-2 flex-wrap text-xs">
+                <span className="px-2.5 py-1 rounded-full bg-secondary text-foreground font-medium">All ({professionals.length})</span>
+                <span className="px-2.5 py-1 rounded-full bg-yellow-500/10 text-yellow-600 font-medium">Pending ({pendingPros.length})</span>
+                <span className="px-2.5 py-1 rounded-full bg-accent/10 text-accent font-medium">Approved ({approvedPros.length})</span>
+                <span className="px-2.5 py-1 rounded-full bg-destructive/10 text-destructive font-medium">Rejected ({rejectedPros.length})</span>
+              </div>
+              <Dialog open={showCreatePro} onOpenChange={setShowCreatePro}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="h-8 gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90 shrink-0">
+                    <Plus className="w-4 h-4" /> Add Professional
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="font-display">Create Professional</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Full Name *</Label>
+                        <Input placeholder="John Doe" value={newPro.full_name} onChange={(e) => setNewPro({ ...newPro, full_name: e.target.value })} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Email *</Label>
+                        <Input type="email" placeholder="john@example.com" value={newPro.email} onChange={(e) => setNewPro({ ...newPro, email: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Phone *</Label>
+                        <Input placeholder="9876543210" value={newPro.phone} onChange={(e) => setNewPro({ ...newPro, phone: e.target.value })} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Category *</Label>
+                        <Select value={newPro.category_id} onValueChange={(v) => setNewPro({ ...newPro, category_id: v })}>
+                          <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                          <SelectContent>
+                            {categories.filter(c => c.is_active).map(c => (
+                              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Headline</Label>
+                      <Input placeholder="e.g. Expert Plumber" value={newPro.headline} onChange={(e) => setNewPro({ ...newPro, headline: e.target.value })} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Area *</Label>
+                        <Input placeholder="Waliv" value={newPro.area} onChange={(e) => setNewPro({ ...newPro, area: e.target.value })} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">City</Label>
+                        <Input placeholder="Vasai" value={newPro.city} onChange={(e) => setNewPro({ ...newPro, city: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Experience (yrs)</Label>
+                        <Input type="number" placeholder="2" value={newPro.experience_years} onChange={(e) => setNewPro({ ...newPro, experience_years: e.target.value })} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Hourly Rate (₹)</Label>
+                        <Input type="number" placeholder="500" value={newPro.hourly_rate} onChange={(e) => setNewPro({ ...newPro, hourly_rate: e.target.value })} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Radius (km)</Label>
+                        <Input type="number" placeholder="5" value={newPro.coverage_radius_km} onChange={(e) => setNewPro({ ...newPro, coverage_radius_km: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Description</Label>
+                      <Textarea placeholder="Brief description of services..." value={newPro.description} onChange={(e) => setNewPro({ ...newPro, description: e.target.value })} rows={3} />
+                    </div>
+                    <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={createProfessional} disabled={creating}>
+                      {creating ? "Creating..." : "Create Professional"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {professionals.length === 0 ? (
@@ -487,6 +640,43 @@ const AdminDashboard = () => {
         {/* CATEGORIES TAB */}
         {tab === "categories" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            {/* Create category button */}
+            <div className="flex justify-end">
+              <Dialog open={showCreateCat} onOpenChange={setShowCreateCat}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="h-8 gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90">
+                    <Plus className="w-4 h-4" /> Add Category
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="font-display">Create Category</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Name *</Label>
+                      <Input placeholder="e.g. Plumbing" value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Slug</Label>
+                      <Input placeholder="auto-generated" value={newCat.slug} onChange={(e) => setNewCat({ ...newCat, slug: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Icon (lucide name)</Label>
+                      <Input placeholder="e.g. wrench, zap, camera" value={newCat.icon} onChange={(e) => setNewCat({ ...newCat, icon: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Description</Label>
+                      <Textarea placeholder="Brief description..." value={newCat.description} onChange={(e) => setNewCat({ ...newCat, description: e.target.value })} rows={2} />
+                    </div>
+                    <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={createCategory} disabled={creating}>
+                      {creating ? "Creating..." : "Create Category"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
             {categories.length === 0 ? (
               <p className="text-muted-foreground text-center py-16">No categories found.</p>
             ) : (
