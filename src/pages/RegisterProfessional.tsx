@@ -91,9 +91,27 @@ const RegisterProfessional = () => {
     }
   }, [user]);
 
-  // Auto-detect location on mount
+  // Auto-detect location on mount - defined inline to avoid hoisting issues
   useEffect(() => {
-    detectCurrentLocation();
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+            { headers: { "Accept-Language": "en" } }
+          );
+          const data = await response.json();
+          const address = data.address || {};
+          const city = address.city || address.town || address.village || address.county || "Vasai";
+          const area = address.suburb || address.neighbourhood || address.hamlet || address.road || "";
+          setForm((prev) => ({ ...prev, city, area }));
+        } catch {}
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   }, []);
 
   if (loading || !user) {
