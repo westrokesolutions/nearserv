@@ -46,6 +46,9 @@ export type Database = {
       }
       professionals: {
         Row: {
+          aadhaar_back_url: string | null
+          aadhaar_front_url: string | null
+          aadhaar_number: string | null
           area: string
           availability_status: string | null
           avatar_url: string | null
@@ -68,6 +71,9 @@ export type Database = {
           verification: Database["public"]["Enums"]["verification_status"]
         }
         Insert: {
+          aadhaar_back_url?: string | null
+          aadhaar_front_url?: string | null
+          aadhaar_number?: string | null
           area: string
           availability_status?: string | null
           avatar_url?: string | null
@@ -90,6 +96,9 @@ export type Database = {
           verification?: Database["public"]["Enums"]["verification_status"]
         }
         Update: {
+          aadhaar_back_url?: string | null
+          aadhaar_front_url?: string | null
+          aadhaar_number?: string | null
           area?: string
           availability_status?: string | null
           avatar_url?: string | null
