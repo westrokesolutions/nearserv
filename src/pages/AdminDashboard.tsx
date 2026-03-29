@@ -538,7 +538,7 @@ const AdminDashboard = () => {
                           <p className="font-medium text-foreground">{pro.experience_years ? `${pro.experience_years} years` : "N/A"}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Hourly Rate</p>
+                          <p className="text-xs text-muted-foreground">Per Day Rate</p>
                           <p className="font-medium text-foreground">{pro.hourly_rate ? `₹${pro.hourly_rate}` : "N/A"}</p>
                         </div>
                         <div>
@@ -549,6 +549,40 @@ const AdminDashboard = () => {
                       {pro.description && (
                         <p className="text-sm text-muted-foreground mb-4">{pro.description}</p>
                       )}
+
+                      {/* Aadhaar Card Details */}
+                      {((pro as any).aadhaar_number || (pro as any).aadhaar_front_url || (pro as any).aadhaar_back_url) && (
+                        <div className="mb-4 p-4 rounded-lg bg-card border border-border">
+                          <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                            <Shield className="w-4 h-4 text-accent" /> Aadhaar Card Details
+                          </h4>
+                          {(pro as any).aadhaar_number && (
+                            <p className="text-sm text-foreground mb-3">
+                              <span className="text-muted-foreground">Number:</span>{" "}
+                              <span className="font-mono font-medium">{(pro as any).aadhaar_number}</span>
+                            </p>
+                          )}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {(pro as any).aadhaar_front_url && (
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">Front</p>
+                                <a href={(pro as any).aadhaar_front_url} target="_blank" rel="noopener noreferrer">
+                                  <img src={(pro as any).aadhaar_front_url} alt="Aadhaar front" className="w-full h-32 rounded-lg object-cover border border-border hover:opacity-80 transition-opacity" />
+                                </a>
+                              </div>
+                            )}
+                            {(pro as any).aadhaar_back_url && (
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">Back</p>
+                                <a href={(pro as any).aadhaar_back_url} target="_blank" rel="noopener noreferrer">
+                                  <img src={(pro as any).aadhaar_back_url} alt="Aadhaar back" className="w-full h-32 rounded-lg object-cover border border-border hover:opacity-80 transition-opacity" />
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       <div className="flex gap-2 flex-wrap">
                         {pro.status === "approved" && (
                           <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => updateProfessionalStatus(pro.id, "suspended")}>
