@@ -32,6 +32,21 @@ const AdminDashboard = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedPro, setExpandedPro] = useState<string | null>(null);
+  const [showCreatePro, setShowCreatePro] = useState(false);
+  const [showCreateCat, setShowCreateCat] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  // Create professional form state
+  const [newPro, setNewPro] = useState({
+    full_name: "", email: "", phone: "", category_id: "",
+    area: "", city: "Vasai", description: "", headline: "",
+    experience_years: "", hourly_rate: "", coverage_radius_km: "5",
+  });
+
+  // Create category form state
+  const [newCat, setNewCat] = useState({
+    name: "", slug: "", icon: "", description: "",
+  });
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
