@@ -288,8 +288,8 @@ const RegisterProfessional = () => {
                         <Textarea id="description" placeholder="Describe your services, skills, and what makes you stand out..." value={form.description} onChange={(e) => update("description", e.target.value)} className="mt-1.5 min-h-[100px]" />
                       </div>
                       <div>
-                        <Label htmlFor="hourlyRate">Hourly Rate (₹)</Label>
-                        <Input id="hourlyRate" type="text" placeholder="e.g. 500" value={form.hourlyRate} onChange={(e) => update("hourlyRate", e.target.value)} className="mt-1.5" />
+                        <Label htmlFor="hourlyRate">Per Day Rate (₹)</Label>
+                        <Input id="hourlyRate" type="text" placeholder="e.g. 2000" value={form.hourlyRate} onChange={(e) => update("hourlyRate", e.target.value)} className="mt-1.5" />
                       </div>
                     </div>
                   </div>
