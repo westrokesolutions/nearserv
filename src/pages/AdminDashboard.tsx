@@ -124,6 +124,24 @@ const AdminDashboard = () => {
     else toast({ title: `Category ${!isActive ? "activated" : "deactivated"}` });
   };
 
+  const updateCategory = async () => {
+    if (!editingCat) return;
+    setCreating(true);
+    const { error } = await supabase.from("categories").update({
+      name: editingCat.name,
+      icon: editingCat.icon || null,
+      description: editingCat.description || null,
+    }).eq("id", editingCat.id);
+    setCreating(false);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Category updated" });
+      setEditingCat(null);
+      fetchData();
+    }
+  };
+
   const createProfessional = async () => {
     if (!newPro.full_name || !newPro.email || !newPro.phone || !newPro.category_id || !newPro.area) {
       toast({ title: "Error", description: "Please fill all required fields", variant: "destructive" });
