@@ -18,28 +18,40 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          faqs: Json | null
           icon: string | null
           id: string
           is_active: boolean
           name: string
+          price_info: string | null
+          process_steps: Json | null
+          services_included: Json | null
           slug: string
         }
         Insert: {
           created_at?: string
           description?: string | null
+          faqs?: Json | null
           icon?: string | null
           id?: string
           is_active?: boolean
           name: string
+          price_info?: string | null
+          process_steps?: Json | null
+          services_included?: Json | null
           slug: string
         }
         Update: {
           created_at?: string
           description?: string | null
+          faqs?: Json | null
           icon?: string | null
           id?: string
           is_active?: boolean
           name?: string
+          price_info?: string | null
+          process_steps?: Json | null
+          services_included?: Json | null
           slug?: string
         }
         Relationships: []

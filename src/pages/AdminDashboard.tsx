@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import CategoryFieldsEditor from "@/components/CategoryFieldsEditor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,6 +48,10 @@ const AdminDashboard = () => {
   // Create category form state
   const [newCat, setNewCat] = useState({
     name: "", slug: "", icon: "", description: "",
+    services_included: [{ title: "", description: "" }] as { title: string; description: string }[],
+    process_steps: [{ step: 1, title: "", description: "" }] as { step: number; title: string; description: string }[],
+    faqs: [{ question: "", answer: "" }] as { question: string; answer: string }[],
+    price_info: "",
   });
 
   useEffect(() => {
@@ -131,6 +136,10 @@ const AdminDashboard = () => {
       name: editingCat.name,
       icon: editingCat.icon || null,
       description: editingCat.description || null,
+      services_included: (editingCat as any).services_included || [],
+      process_steps: (editingCat as any).process_steps || [],
+      faqs: (editingCat as any).faqs || [],
+      price_info: (editingCat as any).price_info || null,
     }).eq("id", editingCat.id);
     setCreating(false);
     if (error) {
@@ -185,6 +194,10 @@ const AdminDashboard = () => {
       slug,
       icon: newCat.icon || null,
       description: newCat.description || null,
+      services_included: newCat.services_included.filter(s => s.title),
+      process_steps: newCat.process_steps.filter(s => s.title),
+      faqs: newCat.faqs.filter(f => f.question),
+      price_info: newCat.price_info || null,
     });
     setCreating(false);
     if (error) {
@@ -192,7 +205,7 @@ const AdminDashboard = () => {
     } else {
       toast({ title: "Category created successfully" });
       setShowCreateCat(false);
-      setNewCat({ name: "", slug: "", icon: "", description: "" });
+      setNewCat({ name: "", slug: "", icon: "", description: "", services_included: [{ title: "", description: "" }], process_steps: [{ step: 1, title: "", description: "" }], faqs: [{ question: "", answer: "" }], price_info: "" });
       fetchData();
     }
   };
@@ -701,11 +714,11 @@ const AdminDashboard = () => {
                     <Plus className="w-4 h-4" /> Add Category
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-lg max-h-[90vh]">
                   <DialogHeader>
                     <DialogTitle className="font-display">Create Category</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4 pt-2 max-h-[70vh] overflow-y-auto">
+                  <div className="space-y-4 pt-2 max-h-[70vh] overflow-y-auto pr-2">
                     <div className="space-y-1.5">
                       <Label className="text-xs">Name *</Label>
                       <Input placeholder="e.g. AC Technician" value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") })} />
@@ -719,10 +732,19 @@ const AdminDashboard = () => {
                       <Input placeholder="e.g. wrench, zap, camera" value={newCat.icon} onChange={(e) => setNewCat({ ...newCat, icon: e.target.value })} />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Detailed Description</Label>
-                      <p className="text-xs text-muted-foreground">Describe all services offered, work process, what the professional does, etc. (Urban Company style)</p>
-                      <Textarea placeholder="e.g. AC Technician services include:&#10;• AC installation &amp; uninstallation&#10;• Gas refilling &amp; leak repair&#10;• Deep cleaning &amp; servicing&#10;• PCB repair &amp; compressor replacement&#10;&#10;Process: The technician inspects the unit, diagnoses the issue, provides a quote, and completes the repair on-site..." value={newCat.description} onChange={(e) => setNewCat({ ...newCat, description: e.target.value })} rows={8} />
+                      <Label className="text-xs">Overview Description</Label>
+                      <Textarea placeholder="Brief overview of this category..." value={newCat.description} onChange={(e) => setNewCat({ ...newCat, description: e.target.value })} rows={3} />
                     </div>
+                    <CategoryFieldsEditor
+                      services={newCat.services_included}
+                      steps={newCat.process_steps}
+                      faqs={newCat.faqs}
+                      priceInfo={newCat.price_info}
+                      onServicesChange={(s) => setNewCat({ ...newCat, services_included: s })}
+                      onStepsChange={(s) => setNewCat({ ...newCat, process_steps: s })}
+                      onFaqsChange={(f) => setNewCat({ ...newCat, faqs: f })}
+                      onPriceInfoChange={(p) => setNewCat({ ...newCat, price_info: p })}
+                    />
                     <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={createCategory} disabled={creating}>
                       {creating ? "Creating..." : "Create Category"}
                     </Button>
@@ -776,12 +798,12 @@ const AdminDashboard = () => {
 
             {/* Edit category dialog */}
             <Dialog open={!!editingCat} onOpenChange={(open) => !open && setEditingCat(null)}>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-lg max-h-[90vh]">
                 <DialogHeader>
                   <DialogTitle className="font-display">Edit Category</DialogTitle>
                 </DialogHeader>
                 {editingCat && (
-                  <div className="space-y-4 pt-2 max-h-[70vh] overflow-y-auto">
+                  <div className="space-y-4 pt-2 max-h-[70vh] overflow-y-auto pr-2">
                     <div className="space-y-1.5">
                       <Label className="text-xs">Name</Label>
                       <Input value={editingCat.name} onChange={(e) => setEditingCat({ ...editingCat, name: e.target.value })} />
@@ -791,10 +813,19 @@ const AdminDashboard = () => {
                       <Input value={editingCat.icon || ""} onChange={(e) => setEditingCat({ ...editingCat, icon: e.target.value })} />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Detailed Description</Label>
-                      <p className="text-xs text-muted-foreground">Describe all services, work process, pricing info, etc.</p>
-                      <Textarea value={editingCat.description || ""} onChange={(e) => setEditingCat({ ...editingCat, description: e.target.value })} rows={10} />
+                      <Label className="text-xs">Overview Description</Label>
+                      <Textarea value={editingCat.description || ""} onChange={(e) => setEditingCat({ ...editingCat, description: e.target.value })} rows={3} />
                     </div>
+                    <CategoryFieldsEditor
+                      services={((editingCat as any).services_included as any[]) || []}
+                      steps={((editingCat as any).process_steps as any[]) || []}
+                      faqs={((editingCat as any).faqs as any[]) || []}
+                      priceInfo={(editingCat as any).price_info || ""}
+                      onServicesChange={(s) => setEditingCat({ ...editingCat, services_included: s } as any)}
+                      onStepsChange={(s) => setEditingCat({ ...editingCat, process_steps: s } as any)}
+                      onFaqsChange={(f) => setEditingCat({ ...editingCat, faqs: f } as any)}
+                      onPriceInfoChange={(p) => setEditingCat({ ...editingCat, price_info: p } as any)}
+                    />
                     <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={updateCategory} disabled={creating}>
                       {creating ? "Saving..." : "Save Changes"}
                     </Button>

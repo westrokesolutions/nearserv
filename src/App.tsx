@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProfessionalDashboard from "./pages/ProfessionalDashboard";
+import CategoryDetail from "./pages/CategoryDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/category/:slug" element={<CategoryDetail />} />
             <Route path="/professional/:id" element={<ProfessionalProfile />} />
             <Route path="/register" element={<RegisterProfessional />} />
             <Route path="/auth" element={<Auth />} />
