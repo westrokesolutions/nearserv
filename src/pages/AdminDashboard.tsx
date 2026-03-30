@@ -193,6 +193,10 @@ const AdminDashboard = () => {
       slug,
       icon: newCat.icon || null,
       description: newCat.description || null,
+      services_included: newCat.services_included.filter(s => s.title),
+      process_steps: newCat.process_steps.filter(s => s.title),
+      faqs: newCat.faqs.filter(f => f.question),
+      price_info: newCat.price_info || null,
     });
     setCreating(false);
     if (error) {
@@ -200,7 +204,7 @@ const AdminDashboard = () => {
     } else {
       toast({ title: "Category created successfully" });
       setShowCreateCat(false);
-      setNewCat({ name: "", slug: "", icon: "", description: "" });
+      setNewCat({ name: "", slug: "", icon: "", description: "", services_included: [{ title: "", description: "" }], process_steps: [{ step: 1, title: "", description: "" }], faqs: [{ question: "", answer: "" }], price_info: "" });
       fetchData();
     }
   };
