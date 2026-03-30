@@ -135,6 +135,10 @@ const AdminDashboard = () => {
       name: editingCat.name,
       icon: editingCat.icon || null,
       description: editingCat.description || null,
+      services_included: (editingCat as any).services_included || [],
+      process_steps: (editingCat as any).process_steps || [],
+      faqs: (editingCat as any).faqs || [],
+      price_info: (editingCat as any).price_info || null,
     }).eq("id", editingCat.id);
     setCreating(false);
     if (error) {
