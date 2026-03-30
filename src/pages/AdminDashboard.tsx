@@ -34,6 +34,7 @@ const AdminDashboard = () => {
   const [expandedPro, setExpandedPro] = useState<string | null>(null);
   const [showCreatePro, setShowCreatePro] = useState(false);
   const [showCreateCat, setShowCreateCat] = useState(false);
+  const [editingCat, setEditingCat] = useState<Category | null>(null);
   const [creating, setCreating] = useState(false);
 
   // Create professional form state
