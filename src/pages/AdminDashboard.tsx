@@ -47,6 +47,10 @@ const AdminDashboard = () => {
   // Create category form state
   const [newCat, setNewCat] = useState({
     name: "", slug: "", icon: "", description: "",
+    services_included: [{ title: "", description: "" }] as { title: string; description: string }[],
+    process_steps: [{ step: 1, title: "", description: "" }] as { step: number; title: string; description: string }[],
+    faqs: [{ question: "", answer: "" }] as { question: string; answer: string }[],
+    price_info: "",
   });
 
   useEffect(() => {
