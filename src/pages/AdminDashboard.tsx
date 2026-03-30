@@ -737,33 +737,71 @@ const AdminDashboard = () => {
               categories.map((cat) => {
                 const proCount = professionals.filter((p) => p.category_id === cat.id).length;
                 return (
-                  <div key={cat.id} className="bg-card rounded-xl border border-border p-4 md:p-5 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-sm text-foreground">{cat.name}</h3>
-                        <span className={`px-2 py-0.5 text-xs rounded-full border font-medium ${
-                          cat.is_active ? "bg-accent/10 text-accent border-accent/20" : "bg-secondary text-muted-foreground border-border"
-                        }`}>
-                          {cat.is_active ? "Active" : "Inactive"}
-                        </span>
+                  <div key={cat.id} className="bg-card rounded-xl border border-border p-4 md:p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-sm text-foreground">{cat.name}</h3>
+                          <span className={`px-2 py-0.5 text-xs rounded-full border font-medium ${
+                            cat.is_active ? "bg-accent/10 text-accent border-accent/20" : "bg-secondary text-muted-foreground border-border"
+                          }`}>
+                            {cat.is_active ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {cat.slug} · {proCount} professional{proCount !== 1 ? "s" : ""}
+                        </p>
+                        {cat.description && (
+                          <p className="text-xs text-muted-foreground mt-2 whitespace-pre-line line-clamp-3">{cat.description}</p>
+                        )}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {cat.slug} · {proCount} professional{proCount !== 1 ? "s" : ""}
-                        {cat.description && ` · ${cat.description}`}
-                      </p>
+                      <div className="flex gap-1.5 shrink-0">
+                        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setEditingCat(cat)}>
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={cat.is_active ? "outline" : "default"}
+                          className={`h-8 text-xs ${!cat.is_active ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
+                          onClick={() => toggleCategory(cat.id, cat.is_active)}
+                        >
+                          {cat.is_active ? "Deactivate" : "Activate"}
+                        </Button>
+                      </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant={cat.is_active ? "outline" : "default"}
-                      className={`h-8 text-xs ${!cat.is_active ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
-                      onClick={() => toggleCategory(cat.id, cat.is_active)}
-                    >
-                      {cat.is_active ? "Deactivate" : "Activate"}
-                    </Button>
                   </div>
                 );
               })
             )}
+
+            {/* Edit category dialog */}
+            <Dialog open={!!editingCat} onOpenChange={(open) => !open && setEditingCat(null)}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="font-display">Edit Category</DialogTitle>
+                </DialogHeader>
+                {editingCat && (
+                  <div className="space-y-4 pt-2 max-h-[70vh] overflow-y-auto">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Name</Label>
+                      <Input value={editingCat.name} onChange={(e) => setEditingCat({ ...editingCat, name: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Icon (lucide name)</Label>
+                      <Input value={editingCat.icon || ""} onChange={(e) => setEditingCat({ ...editingCat, icon: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Detailed Description</Label>
+                      <p className="text-xs text-muted-foreground">Describe all services, work process, pricing info, etc.</p>
+                      <Textarea value={editingCat.description || ""} onChange={(e) => setEditingCat({ ...editingCat, description: e.target.value })} rows={10} />
+                    </div>
+                    <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={updateCategory} disabled={creating}>
+                      {creating ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
           </motion.div>
         )}
       </div>
