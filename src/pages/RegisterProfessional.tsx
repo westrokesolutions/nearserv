@@ -346,6 +346,16 @@ const RegisterProfessional = () => {
                         </button>
                       ))}
                     </div>
+                    {selectedCategory?.description && (
+                      <div className="bg-secondary/50 rounded-xl border border-border p-4 mt-2">
+                        <h3 className="font-display font-semibold text-sm text-foreground mb-2">
+                          About {selectedCategory.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground whitespace-pre-line leading-relaxed">
+                          {selectedCategory.description}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 

@@ -34,6 +34,7 @@ const AdminDashboard = () => {
   const [expandedPro, setExpandedPro] = useState<string | null>(null);
   const [showCreatePro, setShowCreatePro] = useState(false);
   const [showCreateCat, setShowCreateCat] = useState(false);
+  const [editingCat, setEditingCat] = useState<Category | null>(null);
   const [creating, setCreating] = useState(false);
 
   // Create professional form state
@@ -121,6 +122,24 @@ const AdminDashboard = () => {
     const { error } = await supabase.from("categories").update({ is_active: !isActive }).eq("id", id);
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
     else toast({ title: `Category ${!isActive ? "activated" : "deactivated"}` });
+  };
+
+  const updateCategory = async () => {
+    if (!editingCat) return;
+    setCreating(true);
+    const { error } = await supabase.from("categories").update({
+      name: editingCat.name,
+      icon: editingCat.icon || null,
+      description: editingCat.description || null,
+    }).eq("id", editingCat.id);
+    setCreating(false);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Category updated" });
+      setEditingCat(null);
+      fetchData();
+    }
   };
 
   const createProfessional = async () => {
@@ -686,10 +705,10 @@ const AdminDashboard = () => {
                   <DialogHeader>
                     <DialogTitle className="font-display">Create Category</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4 pt-2">
+                  <div className="space-y-4 pt-2 max-h-[70vh] overflow-y-auto">
                     <div className="space-y-1.5">
                       <Label className="text-xs">Name *</Label>
-                      <Input placeholder="e.g. Plumbing" value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") })} />
+                      <Input placeholder="e.g. AC Technician" value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") })} />
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-xs">Slug</Label>
@@ -700,8 +719,9 @@ const AdminDashboard = () => {
                       <Input placeholder="e.g. wrench, zap, camera" value={newCat.icon} onChange={(e) => setNewCat({ ...newCat, icon: e.target.value })} />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Description</Label>
-                      <Textarea placeholder="Brief description..." value={newCat.description} onChange={(e) => setNewCat({ ...newCat, description: e.target.value })} rows={2} />
+                      <Label className="text-xs">Detailed Description</Label>
+                      <p className="text-xs text-muted-foreground">Describe all services offered, work process, what the professional does, etc. (Urban Company style)</p>
+                      <Textarea placeholder="e.g. AC Technician services include:&#10;• AC installation &amp; uninstallation&#10;• Gas refilling &amp; leak repair&#10;• Deep cleaning &amp; servicing&#10;• PCB repair &amp; compressor replacement&#10;&#10;Process: The technician inspects the unit, diagnoses the issue, provides a quote, and completes the repair on-site..." value={newCat.description} onChange={(e) => setNewCat({ ...newCat, description: e.target.value })} rows={8} />
                     </div>
                     <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={createCategory} disabled={creating}>
                       {creating ? "Creating..." : "Create Category"}
@@ -717,33 +737,71 @@ const AdminDashboard = () => {
               categories.map((cat) => {
                 const proCount = professionals.filter((p) => p.category_id === cat.id).length;
                 return (
-                  <div key={cat.id} className="bg-card rounded-xl border border-border p-4 md:p-5 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-sm text-foreground">{cat.name}</h3>
-                        <span className={`px-2 py-0.5 text-xs rounded-full border font-medium ${
-                          cat.is_active ? "bg-accent/10 text-accent border-accent/20" : "bg-secondary text-muted-foreground border-border"
-                        }`}>
-                          {cat.is_active ? "Active" : "Inactive"}
-                        </span>
+                  <div key={cat.id} className="bg-card rounded-xl border border-border p-4 md:p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-sm text-foreground">{cat.name}</h3>
+                          <span className={`px-2 py-0.5 text-xs rounded-full border font-medium ${
+                            cat.is_active ? "bg-accent/10 text-accent border-accent/20" : "bg-secondary text-muted-foreground border-border"
+                          }`}>
+                            {cat.is_active ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {cat.slug} · {proCount} professional{proCount !== 1 ? "s" : ""}
+                        </p>
+                        {cat.description && (
+                          <p className="text-xs text-muted-foreground mt-2 whitespace-pre-line line-clamp-3">{cat.description}</p>
+                        )}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {cat.slug} · {proCount} professional{proCount !== 1 ? "s" : ""}
-                        {cat.description && ` · ${cat.description}`}
-                      </p>
+                      <div className="flex gap-1.5 shrink-0">
+                        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setEditingCat(cat)}>
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={cat.is_active ? "outline" : "default"}
+                          className={`h-8 text-xs ${!cat.is_active ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
+                          onClick={() => toggleCategory(cat.id, cat.is_active)}
+                        >
+                          {cat.is_active ? "Deactivate" : "Activate"}
+                        </Button>
+                      </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant={cat.is_active ? "outline" : "default"}
-                      className={`h-8 text-xs ${!cat.is_active ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
-                      onClick={() => toggleCategory(cat.id, cat.is_active)}
-                    >
-                      {cat.is_active ? "Deactivate" : "Activate"}
-                    </Button>
                   </div>
                 );
               })
             )}
+
+            {/* Edit category dialog */}
+            <Dialog open={!!editingCat} onOpenChange={(open) => !open && setEditingCat(null)}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="font-display">Edit Category</DialogTitle>
+                </DialogHeader>
+                {editingCat && (
+                  <div className="space-y-4 pt-2 max-h-[70vh] overflow-y-auto">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Name</Label>
+                      <Input value={editingCat.name} onChange={(e) => setEditingCat({ ...editingCat, name: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Icon (lucide name)</Label>
+                      <Input value={editingCat.icon || ""} onChange={(e) => setEditingCat({ ...editingCat, icon: e.target.value })} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Detailed Description</Label>
+                      <p className="text-xs text-muted-foreground">Describe all services, work process, pricing info, etc.</p>
+                      <Textarea value={editingCat.description || ""} onChange={(e) => setEditingCat({ ...editingCat, description: e.target.value })} rows={10} />
+                    </div>
+                    <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={updateCategory} disabled={creating}>
+                      {creating ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
           </motion.div>
         )}
       </div>
