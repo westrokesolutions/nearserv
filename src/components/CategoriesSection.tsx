@@ -72,7 +72,7 @@ const CategoriesSection = () => {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.04 }}
                 whileHover={{ y: -4 }}
-                onClick={() => navigate(`/search?q=${encodeURIComponent(cat.name)}`)}
+                onClick={() => navigate(`/category/${cat.slug}`)}
                 className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border border-border hover:border-accent/40 hover:shadow-elevated transition-all duration-300"
               >
                 <div className={`w-16 h-16 rounded-2xl ${palette} flex items-center justify-center transition-transform group-hover:scale-110`}>
