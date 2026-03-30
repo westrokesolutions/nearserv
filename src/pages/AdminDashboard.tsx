@@ -714,11 +714,11 @@ const AdminDashboard = () => {
                     <Plus className="w-4 h-4" /> Add Category
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-lg max-h-[90vh]">
                   <DialogHeader>
                     <DialogTitle className="font-display">Create Category</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4 pt-2 max-h-[70vh] overflow-y-auto">
+                  <div className="space-y-4 pt-2 max-h-[70vh] overflow-y-auto pr-2">
                     <div className="space-y-1.5">
                       <Label className="text-xs">Name *</Label>
                       <Input placeholder="e.g. AC Technician" value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") })} />
@@ -732,10 +732,19 @@ const AdminDashboard = () => {
                       <Input placeholder="e.g. wrench, zap, camera" value={newCat.icon} onChange={(e) => setNewCat({ ...newCat, icon: e.target.value })} />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Detailed Description</Label>
-                      <p className="text-xs text-muted-foreground">Describe all services offered, work process, what the professional does, etc. (Urban Company style)</p>
-                      <Textarea placeholder="e.g. AC Technician services include:&#10;• AC installation &amp; uninstallation&#10;• Gas refilling &amp; leak repair&#10;• Deep cleaning &amp; servicing&#10;• PCB repair &amp; compressor replacement&#10;&#10;Process: The technician inspects the unit, diagnoses the issue, provides a quote, and completes the repair on-site..." value={newCat.description} onChange={(e) => setNewCat({ ...newCat, description: e.target.value })} rows={8} />
+                      <Label className="text-xs">Overview Description</Label>
+                      <Textarea placeholder="Brief overview of this category..." value={newCat.description} onChange={(e) => setNewCat({ ...newCat, description: e.target.value })} rows={3} />
                     </div>
+                    <CategoryFieldsEditor
+                      services={newCat.services_included}
+                      steps={newCat.process_steps}
+                      faqs={newCat.faqs}
+                      priceInfo={newCat.price_info}
+                      onServicesChange={(s) => setNewCat({ ...newCat, services_included: s })}
+                      onStepsChange={(s) => setNewCat({ ...newCat, process_steps: s })}
+                      onFaqsChange={(f) => setNewCat({ ...newCat, faqs: f })}
+                      onPriceInfoChange={(p) => setNewCat({ ...newCat, price_info: p })}
+                    />
                     <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={createCategory} disabled={creating}>
                       {creating ? "Creating..." : "Create Category"}
                     </Button>
