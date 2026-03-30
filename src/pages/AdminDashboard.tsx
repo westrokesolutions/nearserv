@@ -798,12 +798,12 @@ const AdminDashboard = () => {
 
             {/* Edit category dialog */}
             <Dialog open={!!editingCat} onOpenChange={(open) => !open && setEditingCat(null)}>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-lg max-h-[90vh]">
                 <DialogHeader>
                   <DialogTitle className="font-display">Edit Category</DialogTitle>
                 </DialogHeader>
                 {editingCat && (
-                  <div className="space-y-4 pt-2 max-h-[70vh] overflow-y-auto">
+                  <div className="space-y-4 pt-2 max-h-[70vh] overflow-y-auto pr-2">
                     <div className="space-y-1.5">
                       <Label className="text-xs">Name</Label>
                       <Input value={editingCat.name} onChange={(e) => setEditingCat({ ...editingCat, name: e.target.value })} />
@@ -813,10 +813,19 @@ const AdminDashboard = () => {
                       <Input value={editingCat.icon || ""} onChange={(e) => setEditingCat({ ...editingCat, icon: e.target.value })} />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Detailed Description</Label>
-                      <p className="text-xs text-muted-foreground">Describe all services, work process, pricing info, etc.</p>
-                      <Textarea value={editingCat.description || ""} onChange={(e) => setEditingCat({ ...editingCat, description: e.target.value })} rows={10} />
+                      <Label className="text-xs">Overview Description</Label>
+                      <Textarea value={editingCat.description || ""} onChange={(e) => setEditingCat({ ...editingCat, description: e.target.value })} rows={3} />
                     </div>
+                    <CategoryFieldsEditor
+                      services={((editingCat as any).services_included as any[]) || []}
+                      steps={((editingCat as any).process_steps as any[]) || []}
+                      faqs={((editingCat as any).faqs as any[]) || []}
+                      priceInfo={(editingCat as any).price_info || ""}
+                      onServicesChange={(s) => setEditingCat({ ...editingCat, services_included: s } as any)}
+                      onStepsChange={(s) => setEditingCat({ ...editingCat, process_steps: s } as any)}
+                      onFaqsChange={(f) => setEditingCat({ ...editingCat, faqs: f } as any)}
+                      onPriceInfoChange={(p) => setEditingCat({ ...editingCat, price_info: p } as any)}
+                    />
                     <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={updateCategory} disabled={creating}>
                       {creating ? "Saving..." : "Save Changes"}
                     </Button>
