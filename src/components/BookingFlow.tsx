@@ -233,6 +233,19 @@ const BookingFlow = ({ onComplete, serviceName, location }: Props) => {
                   ))}
                 </div>
                 {errors.preferredTime && <p className="text-xs text-destructive mt-1">{errors.preferredTime}</p>}
+
+                <div className="mt-3">
+                  <Label htmlFor="customTime" className="text-xs text-muted-foreground mb-1.5 block">
+                    Or enter your exact preferred time:
+                  </Label>
+                  <Input
+                    id="customTime"
+                    type="time"
+                    value={details.customTime}
+                    onChange={(e) => setDetails({ ...details, customTime: e.target.value, preferredTime: "" })}
+                    className="max-w-[200px]"
+                  />
+                </div>
               </div>
 
               <div>
