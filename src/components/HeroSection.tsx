@@ -68,7 +68,6 @@ const HeroSection = () => {
   const handleSelectSuggestion = (cat: CategorySuggestion) => {
     setQuery(cat.name);
     setShowSuggestions(false);
-    navigate(`/category/${cat.slug}`);
   };
 
   const handleSearch = () => {

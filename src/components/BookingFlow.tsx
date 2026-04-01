@@ -11,7 +11,9 @@ export type BookingDetails = {
   email: string;
   preferredDate: string;
   preferredTime: string;
+  customTime: string;
   workersNeeded: number;
+  shiftPreference: "day" | "night";
 };
 
 type Props = {
