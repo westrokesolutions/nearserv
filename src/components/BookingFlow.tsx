@@ -55,7 +55,7 @@ const BookingFlow = ({ onComplete, serviceName, location }: Props) => {
   const validateStep2 = () => {
     const newErrors: Record<string, string> = {};
     if (!details.preferredDate) newErrors.preferredDate = "Please select a date";
-    if (!details.preferredTime) newErrors.preferredTime = "Please select a time";
+    if (!details.preferredTime && !details.customTime) newErrors.preferredTime = "Please select or enter a time";
     if (details.workersNeeded < 1) newErrors.workersNeeded = "At least 1 worker required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
