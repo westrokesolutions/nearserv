@@ -270,6 +270,37 @@ const BookingFlow = ({ onComplete, serviceName, location }: Props) => {
                 </div>
                 {errors.workersNeeded && <p className="text-xs text-destructive mt-1">{errors.workersNeeded}</p>}
               </div>
+
+              <div>
+                <Label className="flex items-center gap-2 mb-1.5">
+                  <Sun className="w-4 h-4 text-accent" />
+                  Which shift do you need?
+                </Label>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setDetails({ ...details, shiftPreference: "day" })}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium border transition-all ${
+                      details.shiftPreference === "day"
+                        ? "bg-accent text-accent-foreground border-accent"
+                        : "bg-card border-border text-foreground hover:border-accent/50"
+                    }`}
+                  >
+                    <Sun className="w-4 h-4" />
+                    Day Shift
+                  </button>
+                  <button
+                    onClick={() => setDetails({ ...details, shiftPreference: "night" })}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium border transition-all ${
+                      details.shiftPreference === "night"
+                        ? "bg-accent text-accent-foreground border-accent"
+                        : "bg-card border-border text-foreground hover:border-accent/50"
+                    }`}
+                  >
+                    <Moon className="w-4 h-4" />
+                    Night Shift
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-3">
