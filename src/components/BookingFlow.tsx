@@ -15,6 +15,7 @@ export type BookingDetails = {
   customTime: string;
   workersNeeded: number;
   shiftPreference: "day" | "night";
+  jobDescription: string;
 };
 
 type Props = {
