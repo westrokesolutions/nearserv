@@ -36,7 +36,9 @@ const BookingFlow = ({ onComplete, serviceName, location }: Props) => {
     email: "",
     preferredDate: "",
     preferredTime: "",
+    customTime: "",
     workersNeeded: 1,
+    shiftPreference: "day",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
