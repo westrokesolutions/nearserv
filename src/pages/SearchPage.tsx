@@ -5,6 +5,7 @@ import { Search, SlidersHorizontal, BadgeCheck, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProfessionalCard from "@/components/ProfessionalCard";
+import BookingFlow, { type BookingDetails } from "@/components/BookingFlow";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -18,6 +19,7 @@ type ProfessionalWithCategory = Tables<"professionals"> & {
 const SearchPage = () => {
   const [searchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
+  const initialLocation = searchParams.get("loc") || "";
   const [query, setQuery] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
@@ -25,6 +27,10 @@ const SearchPage = () => {
   const [professionals, setProfessionals] = useState<ProfessionalWithCategory[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Booking flow state
+  const [bookingComplete, setBookingComplete] = useState(false);
+  const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
 
   useEffect(() => {
     fetchCategories();
@@ -62,92 +68,130 @@ const SearchPage = () => {
     return matchesQuery && matchesCat && matchesVerified;
   });
 
+  const handleBookingComplete = (details: BookingDetails) => {
+    setBookingDetails(details);
+    setBookingComplete(true);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="pt-[calc(5rem+var(--safe-area-top))] pb-20">
         <div className="container mx-auto px-4">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-            <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
-              <div className="flex items-center gap-2 flex-1 px-4 py-3 rounded-xl bg-card border border-border">
-                <Search className="w-5 h-5 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search services or professionals..."
-                  className="bg-transparent outline-none w-full text-foreground placeholder:text-muted-foreground"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-                {query && (
-                  <button onClick={() => setQuery("")}>
-                    <X className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                )}
-              </div>
-              <Button variant="outline" className="gap-2" onClick={() => setShowFilters(!showFilters)}>
-                <SlidersHorizontal className="w-4 h-4" />
-                Filters
-              </Button>
-            </div>
-
-            {showFilters && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-4 p-4 rounded-xl bg-card border border-border">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} className="rounded" />
-                  <BadgeCheck className="w-4 h-4 text-accent" />
-                  <span className="text-sm text-foreground">Verified only</span>
-                </label>
-              </motion.div>
-            )}
-          </motion.div>
-
-          <div className="flex flex-wrap gap-2 mb-8">
-            {["All", ...categories].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  selectedCategory === cat
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          <p className="text-sm text-muted-foreground mb-6">
-            {loading ? "Loading..." : `${filtered.length} professional${filtered.length !== 1 ? "s" : ""} found`}
-          </p>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map((pro, i) => (
-              <ProfessionalCard
-                key={pro.id}
-                professional={{
-                  id: pro.id,
-                  name: pro.full_name,
-                  headline: pro.headline || pro.categories?.name || "",
-                  category: pro.categories?.name || "",
-                  rating: 0,
-                  reviewCount: 0,
-                  location: `${pro.area}, ${pro.city}`,
-                  experience: pro.experience_years ? `${pro.experience_years} years` : "",
-                  verified: pro.verification === "verified",
-                  premium: pro.is_premium,
-                  avatar: pro.avatar_url || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face",
-                  hourlyRate: pro.hourly_rate ? `₹${pro.hourly_rate}/hr` : undefined,
-                }}
-                index={i}
+          {!bookingComplete ? (
+            /* Step 1 & 2: Booking flow */
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="py-8">
+              <BookingFlow
+                onComplete={handleBookingComplete}
+                serviceName={initialQuery}
+                location={initialLocation}
               />
-            ))}
-          </div>
+            </motion.div>
+          ) : (
+            /* Step 3: Choose professionals */
+            <>
+              {/* Booking summary banner */}
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 p-4 rounded-xl bg-accent/10 border border-accent/20"
+              >
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                  <span><span className="text-muted-foreground">Customer:</span> <strong className="text-foreground">{bookingDetails?.fullName}</strong></span>
+                  <span><span className="text-muted-foreground">Phone:</span> <strong className="text-foreground">+91 {bookingDetails?.phone}</strong></span>
+                  {bookingDetails?.email && <span><span className="text-muted-foreground">Email:</span> <strong className="text-foreground">{bookingDetails.email}</strong></span>}
+                  <span><span className="text-muted-foreground">Date:</span> <strong className="text-foreground">{bookingDetails?.preferredDate}</strong></span>
+                  <span><span className="text-muted-foreground">Time:</span> <strong className="text-foreground">{bookingDetails?.preferredTime}</strong></span>
+                  <span><span className="text-muted-foreground">Workers:</span> <strong className="text-foreground">{bookingDetails?.workersNeeded}</strong></span>
+                </div>
+              </motion.div>
 
-          {!loading && filtered.length === 0 && (
-            <div className="text-center py-20">
-              <p className="text-muted-foreground text-lg">No professionals found. Try adjusting your search.</p>
-            </div>
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+                <h2 className="text-2xl font-bold text-foreground mb-2">Now Choose Your Professional</h2>
+                <p className="text-muted-foreground text-sm mb-6">Select a professional to complete your booking.</p>
+
+                <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
+                  <div className="flex items-center gap-2 flex-1 px-4 py-3 rounded-xl bg-card border border-border">
+                    <Search className="w-5 h-5 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Search services or professionals..."
+                      className="bg-transparent outline-none w-full text-foreground placeholder:text-muted-foreground"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                    />
+                    {query && (
+                      <button onClick={() => setQuery("")}>
+                        <X className="w-4 h-4 text-muted-foreground" />
+                      </button>
+                    )}
+                  </div>
+                  <Button variant="outline" className="gap-2" onClick={() => setShowFilters(!showFilters)}>
+                    <SlidersHorizontal className="w-4 h-4" />
+                    Filters
+                  </Button>
+                </div>
+
+                {showFilters && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-4 p-4 rounded-xl bg-card border border-border">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} className="rounded" />
+                      <BadgeCheck className="w-4 h-4 text-accent" />
+                      <span className="text-sm text-foreground">Verified only</span>
+                    </label>
+                  </motion.div>
+                )}
+              </motion.div>
+
+              <div className="flex flex-wrap gap-2 mb-8">
+                {["All", ...categories].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      selectedCategory === cat
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-secondary text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              <p className="text-sm text-muted-foreground mb-6">
+                {loading ? "Loading..." : `${filtered.length} professional${filtered.length !== 1 ? "s" : ""} found`}
+              </p>
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filtered.map((pro, i) => (
+                  <ProfessionalCard
+                    key={pro.id}
+                    professional={{
+                      id: pro.id,
+                      name: pro.full_name,
+                      headline: pro.headline || pro.categories?.name || "",
+                      category: pro.categories?.name || "",
+                      rating: 0,
+                      reviewCount: 0,
+                      location: `${pro.area}, ${pro.city}`,
+                      experience: pro.experience_years ? `${pro.experience_years} years` : "",
+                      verified: pro.verification === "verified",
+                      premium: pro.is_premium,
+                      avatar: pro.avatar_url || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face",
+                      hourlyRate: pro.hourly_rate ? `₹${pro.hourly_rate}/hr` : undefined,
+                    }}
+                    index={i}
+                  />
+                ))}
+              </div>
+
+              {!loading && filtered.length === 0 && (
+                <div className="text-center py-20">
+                  <p className="text-muted-foreground text-lg">No professionals found. Try adjusting your search.</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
