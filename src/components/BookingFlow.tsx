@@ -4,6 +4,7 @@ import { User, Phone, Mail, Calendar, Clock, Users, ArrowRight, ArrowLeft, Check
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export type BookingDetails = {
   fullName: string;
@@ -14,6 +15,7 @@ export type BookingDetails = {
   customTime: string;
   workersNeeded: number;
   shiftPreference: "day" | "night";
+  jobDescription: string;
 };
 
 type Props = {
@@ -39,6 +41,7 @@ const BookingFlow = ({ onComplete, serviceName, location }: Props) => {
     customTime: "",
     workersNeeded: 1,
     shiftPreference: "day",
+    jobDescription: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -300,6 +303,21 @@ const BookingFlow = ({ onComplete, serviceName, location }: Props) => {
                     Night Shift
                   </button>
                 </div>
+              </div>
+
+              <div>
+                <Label htmlFor="jobDescription" className="flex items-center gap-2 mb-1.5">
+                  📝 Describe Your Job or Service Needed
+                </Label>
+                <Textarea
+                  id="jobDescription"
+                  placeholder="Please describe the work you need done in detail. For example: 'Need a plumber to fix a leaking kitchen tap and check bathroom pipes...'"
+                  value={details.jobDescription}
+                  onChange={(e) => setDetails({ ...details, jobDescription: e.target.value })}
+                  className="min-h-[120px] resize-y"
+                  maxLength={1000}
+                />
+                <p className="text-xs text-muted-foreground mt-1 text-right">{details.jobDescription.length}/1000</p>
               </div>
             </div>
 
