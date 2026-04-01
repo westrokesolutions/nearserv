@@ -1,9 +1,17 @@
-import { Search, MapPin, ArrowRight } from "lucide-react";
-import { useState } from "react";
+import { Search, MapPin, ArrowRight, Crosshair, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import heroProfessional from "@/assets/hero-professional.jpg";
+
+type CategorySuggestion = {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+};
 
 const popularServices = [
   "Plumbing", "Electrical", "Photography", "Web Development", "Tutors",
@@ -11,11 +19,84 @@ const popularServices = [
 
 const HeroSection = () => {
   const [query, setQuery] = useState("");
-  const [location, setLocation] = useState("Vasai, Maharashtra");
+  const [location, setLocation] = useState("");
+  const [suggestions, setSuggestions] = useState<CategorySuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
+  // Fetch matching categories as user types
+  useEffect(() => {
+    if (query.trim().length < 1) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from("categories")
+        .select("id, name, slug, icon")
+        .eq("is_active", true)
+        .ilike("name", `%${query.trim()}%`)
+        .limit(6);
+      if (data && data.length > 0) {
+        setSuggestions(data);
+        setShowSuggestions(true);
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSelectSuggestion = (cat: CategorySuggestion) => {
+    setQuery(cat.name);
+    setShowSuggestions(false);
+    navigate(`/category/${cat.slug}`);
+  };
 
   const handleSearch = () => {
     navigate(`/search?q=${encodeURIComponent(query)}&loc=${encodeURIComponent(location)}`);
+  };
+
+  const detectLocation = () => {
+    if (!navigator.geolocation) return;
+    setDetectingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json&addressdetails=1`
+          );
+          const data = await res.json();
+          const addr = data.address || {};
+          const area = addr.suburb || addr.neighbourhood || addr.village || addr.town || "";
+          const city = addr.city || addr.state_district || addr.county || "";
+          setLocation(area && city ? `${area}, ${city}` : area || city || `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
+        } catch {
+          setLocation(`${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
+        }
+        setDetectingLocation(false);
+      },
+      () => setDetectingLocation(false),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
   };
 
   return (
@@ -46,27 +127,74 @@ const HeroSection = () => {
             {/* Search box */}
             <div className="bg-background rounded-2xl p-2 shadow-elevated border border-border max-w-xl">
               <div className="flex flex-col sm:flex-row gap-2">
-                <div className="flex items-center gap-2 flex-1 px-4 py-3 rounded-xl bg-card border border-border">
-                  <Search className="w-5 h-5 text-muted-foreground shrink-0" />
-                  <input
-                    type="text"
-                    placeholder="What service do you need?"
-                    className="bg-transparent outline-none w-full text-foreground placeholder:text-muted-foreground text-sm"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  />
+                {/* Service search with autocomplete */}
+                <div className="relative flex-1" ref={suggestionsRef}>
+                  <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-card border border-border">
+                    <Search className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      placeholder="What service do you need?"
+                      className="bg-transparent outline-none w-full text-foreground placeholder:text-muted-foreground text-sm"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    />
+                  </div>
+
+                  <AnimatePresence>
+                    {showSuggestions && suggestions.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute z-50 left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-elevated overflow-hidden"
+                      >
+                        {suggestions.map((cat) => (
+                          <button
+                            key={cat.id}
+                            onClick={() => handleSelectSuggestion(cat)}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-accent/10 transition-colors"
+                          >
+                            <span className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-base shrink-0">
+                              {cat.icon || "🔧"}
+                            </span>
+                            <div>
+                              <p className="text-sm font-medium text-foreground">{cat.name}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-card border border-border sm:w-48">
+
+                {/* Location with auto-detect */}
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-card border border-border sm:w-52">
                   <MapPin className="w-5 h-5 text-accent shrink-0" />
                   <input
                     type="text"
-                    placeholder="Location"
+                    placeholder="Your location"
                     className="bg-transparent outline-none w-full text-foreground placeholder:text-muted-foreground text-sm"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                   />
+                  <button
+                    onClick={detectLocation}
+                    disabled={detectingLocation}
+                    className="shrink-0 text-accent hover:text-accent/80 transition-colors"
+                    title="Detect my location"
+                  >
+                    {detectingLocation ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Crosshair className="w-4 h-4" />
+                    )}
+                  </button>
                 </div>
+
                 <Button
                   onClick={handleSearch}
                   className="bg-accent text-accent-foreground hover:bg-accent/90 px-6 py-6 rounded-xl font-semibold text-sm"
@@ -107,7 +235,6 @@ const HeroSection = () => {
                 alt="Professional service provider"
                 className="relative z-10 w-full max-w-md mx-auto rounded-3xl object-cover shadow-dramatic"
               />
-              {/* Floating card */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
