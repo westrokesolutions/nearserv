@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Phone, Mail, Calendar, Clock, Users, ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { User, Phone, Mail, Calendar, Clock, Users, ArrowRight, ArrowLeft, CheckCircle2, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,9 @@ export type BookingDetails = {
   email: string;
   preferredDate: string;
   preferredTime: string;
+  customTime: string;
   workersNeeded: number;
+  shiftPreference: "day" | "night";
 };
 
 type Props = {
@@ -34,7 +36,9 @@ const BookingFlow = ({ onComplete, serviceName, location }: Props) => {
     email: "",
     preferredDate: "",
     preferredTime: "",
+    customTime: "",
     workersNeeded: 1,
+    shiftPreference: "day",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -51,7 +55,7 @@ const BookingFlow = ({ onComplete, serviceName, location }: Props) => {
   const validateStep2 = () => {
     const newErrors: Record<string, string> = {};
     if (!details.preferredDate) newErrors.preferredDate = "Please select a date";
-    if (!details.preferredTime) newErrors.preferredTime = "Please select a time";
+    if (!details.preferredTime && !details.customTime) newErrors.preferredTime = "Please select or enter a time";
     if (details.workersNeeded < 1) newErrors.workersNeeded = "At least 1 worker required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -229,6 +233,19 @@ const BookingFlow = ({ onComplete, serviceName, location }: Props) => {
                   ))}
                 </div>
                 {errors.preferredTime && <p className="text-xs text-destructive mt-1">{errors.preferredTime}</p>}
+
+                <div className="mt-3">
+                  <Label htmlFor="customTime" className="text-xs text-muted-foreground mb-1.5 block">
+                    Or enter your exact preferred time:
+                  </Label>
+                  <Input
+                    id="customTime"
+                    type="time"
+                    value={details.customTime}
+                    onChange={(e) => setDetails({ ...details, customTime: e.target.value, preferredTime: "" })}
+                    className="max-w-[200px]"
+                  />
+                </div>
               </div>
 
               <div>
@@ -252,6 +269,37 @@ const BookingFlow = ({ onComplete, serviceName, location }: Props) => {
                   </button>
                 </div>
                 {errors.workersNeeded && <p className="text-xs text-destructive mt-1">{errors.workersNeeded}</p>}
+              </div>
+
+              <div>
+                <Label className="flex items-center gap-2 mb-1.5">
+                  <Sun className="w-4 h-4 text-accent" />
+                  Which shift do you need?
+                </Label>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setDetails({ ...details, shiftPreference: "day" })}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium border transition-all ${
+                      details.shiftPreference === "day"
+                        ? "bg-accent text-accent-foreground border-accent"
+                        : "bg-card border-border text-foreground hover:border-accent/50"
+                    }`}
+                  >
+                    <Sun className="w-4 h-4" />
+                    Day Shift
+                  </button>
+                  <button
+                    onClick={() => setDetails({ ...details, shiftPreference: "night" })}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium border transition-all ${
+                      details.shiftPreference === "night"
+                        ? "bg-accent text-accent-foreground border-accent"
+                        : "bg-card border-border text-foreground hover:border-accent/50"
+                    }`}
+                  >
+                    <Moon className="w-4 h-4" />
+                    Night Shift
+                  </button>
+                </div>
               </div>
             </div>
 
