@@ -304,6 +304,21 @@ const BookingFlow = ({ onComplete, serviceName, location }: Props) => {
                   </button>
                 </div>
               </div>
+
+              <div>
+                <Label htmlFor="jobDescription" className="flex items-center gap-2 mb-1.5">
+                  📝 Describe Your Job or Service Needed
+                </Label>
+                <Textarea
+                  id="jobDescription"
+                  placeholder="Please describe the work you need done in detail. For example: 'Need a plumber to fix a leaking kitchen tap and check bathroom pipes...'"
+                  value={details.jobDescription}
+                  onChange={(e) => setDetails({ ...details, jobDescription: e.target.value })}
+                  className="min-h-[120px] resize-y"
+                  maxLength={1000}
+                />
+                <p className="text-xs text-muted-foreground mt-1 text-right">{details.jobDescription.length}/1000</p>
+              </div>
             </div>
 
             <div className="flex gap-3">
