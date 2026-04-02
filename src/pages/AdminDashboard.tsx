@@ -23,6 +23,7 @@ import type { Tables } from "@/integrations/supabase/types";
 type Professional = Tables<"professionals"> & { categories?: { name: string } | null };
 type Review = Tables<"reviews"> & { professionals?: { full_name: string } | null };
 type Category = Tables<"categories">;
+type Booking = Tables<"bookings">;
 
 const AdminDashboard = () => {
   const { user, isAdmin, loading: authLoading, signOut } = useAuth();
