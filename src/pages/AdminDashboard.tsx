@@ -5,7 +5,7 @@ import {
   Users, CheckCircle, XCircle, Clock, Shield, Star,
   BarChart3, Eye, Trash2, RefreshCw, TrendingUp,
   FolderOpen, MessageSquare, Activity, LogOut,
-  MapPin, ChevronDown, ChevronUp, Plus,
+  MapPin, ChevronDown, ChevronUp, Plus, ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
