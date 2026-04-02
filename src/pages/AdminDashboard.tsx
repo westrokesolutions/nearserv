@@ -64,14 +64,16 @@ const AdminDashboard = () => {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [prosRes, revRes, catRes] = await Promise.all([
+    const [prosRes, revRes, catRes, bookRes] = await Promise.all([
       supabase.from("professionals").select("*, categories(name)").order("created_at", { ascending: false }),
       supabase.from("reviews").select("*, professionals(full_name)").order("created_at", { ascending: false }),
       supabase.from("categories").select("*").order("name"),
+      supabase.from("bookings").select("*").order("created_at", { ascending: false }),
     ]);
     if (prosRes.data) setProfessionals(prosRes.data as Professional[]);
     if (revRes.data) setReviews(revRes.data as Review[]);
     if (catRes.data) setCategories(catRes.data);
+    if (bookRes.data) setBookings(bookRes.data);
     setLoading(false);
   }, []);
 
