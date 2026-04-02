@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, SlidersHorizontal, BadgeCheck, X, CheckCircle2 } from "lucide-react";
+import { Search, SlidersHorizontal, BadgeCheck, X, CheckCircle2, ArrowRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProfessionalCard from "@/components/ProfessionalCard";
