@@ -37,6 +37,16 @@ const ProfessionalProfile = () => {
   const [professional, setProfessional] = useState<Professional | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hiring, setHiring] = useState(false);
+  const [hired, setHired] = useState(false);
+  const [pendingBooking, setPendingBooking] = useState<PendingBooking | null>(null);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem("pendingBooking");
+    if (stored) {
+      try { setPendingBooking(JSON.parse(stored)); } catch { /* ignore */ }
+    }
+  }, []);
 
   useEffect(() => {
     if (id) fetchProfessional();
