@@ -83,7 +83,7 @@ const ResetPassword = () => {
           <div className="bg-card rounded-2xl border border-border shadow-medium p-6 md:p-8">
             {success ? (
               <div className="text-center py-4">
-                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                <CheckCircle className="w-12 h-12 text-accent mx-auto mb-3" />
                 <p className="text-foreground font-medium">Password reset successful!</p>
                 <p className="text-sm text-muted-foreground mt-1">Redirecting to login...</p>
               </div>
