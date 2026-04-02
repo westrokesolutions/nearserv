@@ -319,6 +319,44 @@ const ProfessionalDashboard = () => {
           </motion.div>
         )}
 
+        {tab === "jobs" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            <div className="flex gap-2 flex-wrap text-xs mb-2">
+              <span className="px-2.5 py-1 rounded-full bg-secondary text-foreground font-medium">Total ({totalJobs})</span>
+              <span className="px-2.5 py-1 rounded-full bg-accent/10 text-accent font-medium">Confirmed ({bookings.filter(b => b.status === "confirmed").length})</span>
+              <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">Completed ({completedJobs})</span>
+            </div>
+            {bookings.length === 0 ? (
+              <p className="text-muted-foreground text-center py-16">No jobs received yet.</p>
+            ) : (
+              bookings.map((booking) => (
+                <div key={booking.id} className="bg-card rounded-xl border border-border p-4 md:p-5">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <span className="font-semibold text-foreground text-sm">{booking.service_name || "Service"}</span>
+                      <p className="text-xs text-muted-foreground mt-0.5">Customer: {booking.customer_name}</p>
+                    </div>
+                    <span className={`px-2 py-0.5 text-xs rounded-full border font-medium ${
+                      booking.status === "completed" ? "bg-primary/10 text-primary border-primary/20"
+                      : booking.status === "confirmed" ? "bg-accent/10 text-accent border-accent/20"
+                      : "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
+                    }`}>
+                      {booking.status}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
+                    <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {booking.preferred_date}</span>
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {booking.preferred_time}</span>
+                    {booking.payment_offer && <span>₹{booking.payment_offer}</span>}
+                    <span>{booking.hours_needed}h · {booking.workers_needed} worker(s)</span>
+                  </div>
+                  {booking.job_description && <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{booking.job_description}</p>}
+                </div>
+              ))
+            )}
+          </motion.div>
+        )}
+
         {tab === "reviews" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             <div className="flex gap-2 flex-wrap text-xs mb-2">
