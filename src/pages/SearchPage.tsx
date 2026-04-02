@@ -262,9 +262,6 @@ const SearchPage = () => {
                       hourlyRate: pro.hourly_rate ? `₹${pro.hourly_rate}/hr` : undefined,
                     }}
                     index={i}
-                    showHireButton={true}
-                    hiring={hiring}
-                    onHire={handleHire}
                   />
                 ))}
               </div>
