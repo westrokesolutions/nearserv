@@ -1,9 +1,13 @@
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Wrench, Zap, Globe, Palette, GraduationCap, Camera,
   Dumbbell, Hammer, CalendarDays, Scale, ArrowRight,
+  Thermometer, Car, UtensilsCrossed, Cpu, HardHat, PartyPopper,
+  Cog, Factory, Settings, Truck, Building, SprayCan, Construction,
+  Gavel, Package, Settings2, Paintbrush, Sparkles, HeartHandshake,
+  Flame,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,6 +16,14 @@ const iconMap: Record<string, any> = {
   wrench: Wrench, zap: Zap, code: Globe, palette: Palette,
   "book-open": GraduationCap, camera: Camera, dumbbell: Dumbbell,
   hammer: Hammer, calendar: CalendarDays, scale: Scale,
+  thermometer: Thermometer, car: Car, utensils: UtensilsCrossed,
+  cpu: Cpu, "hard-hat": HardHat, "party-popper": PartyPopper,
+  cog: Cog, factory: Factory, settings: Settings, truck: Truck,
+  building: Building, "spray-can": SprayCan, crane: Construction,
+  gavel: Gavel, package: Package, "settings-2": Settings2,
+  "brick-wall": Construction, paintbrush: Paintbrush,
+  sparkles: Sparkles, "heart-handshake": HeartHandshake,
+  flame: Flame,
 };
 
 const colorPalettes = [
@@ -62,7 +74,7 @@ const CategoriesSection = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {categories.map((cat, i) => {
-            const Icon = iconMap[cat.icon || ""] || Wrench;
+            const Icon = iconMap[(cat.icon || "").toLowerCase()] || Wrench;
             const palette = colorPalettes[i % colorPalettes.length];
             return (
               <motion.button
