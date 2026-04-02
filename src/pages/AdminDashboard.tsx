@@ -28,7 +28,7 @@ type Booking = Tables<"bookings">;
 const AdminDashboard = () => {
   const { user, isAdmin, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "professionals" | "reviews" | "categories">("overview");
+  const [tab, setTab] = useState<"overview" | "professionals" | "reviews" | "categories" | "bookings">("overview");
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
