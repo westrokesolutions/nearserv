@@ -194,7 +194,7 @@ const SearchPage = () => {
 
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
                 <h2 className="text-2xl font-bold text-foreground mb-2">Now Choose Your Professional</h2>
-                <p className="text-muted-foreground text-sm mb-6">Select a professional to complete your booking.</p>
+                <p className="text-muted-foreground text-sm mb-6">Click on a professional to view their full profile and hire them.</p>
 
                 <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
                   <div className="flex items-center gap-2 flex-1 px-4 py-3 rounded-xl bg-card border border-border">
