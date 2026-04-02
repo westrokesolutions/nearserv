@@ -3,16 +3,33 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, BadgeCheck, Star, MapPin, Phone, MessageCircle,
-  Clock, Briefcase, Award, Shield,
+  Clock, Briefcase, Award, Shield, CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Professional = Tables<"professionals"> & { categories: { name: string } | null };
 type Review = Tables<"reviews">;
+
+interface PendingBooking {
+  fullName: string;
+  phone: string;
+  email?: string;
+  preferredDate: string;
+  preferredTime: string;
+  customTime?: string;
+  workersNeeded: number;
+  shiftPreference: string;
+  hoursNeeded: number;
+  paymentOffer?: string;
+  jobDescription?: string;
+  serviceName?: string;
+  location?: string;
+}
 
 const ProfessionalProfile = () => {
   const { id } = useParams();
