@@ -22,7 +22,7 @@ const Auth = () => {
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp, signInWithOtp, verifyOtp } = useAuth();
+  const { signIn, signUp, signInWithOtp, verifyOtp, resetPassword } = useAuth();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(window.location.search);
   const redirectTo = searchParams.get("redirect") || "/";
@@ -56,6 +56,22 @@ const Auth = () => {
       navigate(redirectTo);
     } catch (error: any) {
       toast({ title: "Verification Failed", description: error.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({ title: "Enter your email", description: "Please enter your email address first.", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      await resetPassword(email);
+      toast({ title: "Reset link sent!", description: `Check your inbox at ${email} for a password reset link.` });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
