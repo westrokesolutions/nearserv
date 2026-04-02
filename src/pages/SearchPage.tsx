@@ -5,11 +5,9 @@ import { Search, SlidersHorizontal, BadgeCheck, X, CheckCircle2 } from "lucide-r
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProfessionalCard from "@/components/ProfessionalCard";
-import type { Professional } from "@/components/ProfessionalCard";
 import BookingFlow, { type BookingDetails } from "@/components/BookingFlow";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
 type ProfessionalWithCategory = Tables<"professionals"> & {
@@ -27,7 +25,6 @@ const SearchPage = () => {
   const [professionals, setProfessionals] = useState<ProfessionalWithCategory[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hiring, setHiring] = useState(false);
   const [hiredPro, setHiredPro] = useState<string | null>(null);
 
   const [bookingComplete, setBookingComplete] = useState(false);
@@ -72,66 +69,14 @@ const SearchPage = () => {
   const handleBookingComplete = (details: BookingDetails) => {
     setBookingDetails(details);
     setBookingComplete(true);
+    // Store booking details for the profile page hire button
+    sessionStorage.setItem("pendingBooking", JSON.stringify({
+      ...details,
+      serviceName: initialQuery || null,
+      location: initialLocation || null,
+    }));
   };
 
-  const handleHire = async (professional: Professional) => {
-    if (!bookingDetails) return;
-    setHiring(true);
-
-    try {
-      // Save booking to database
-      const { error } = await supabase.from("bookings").insert({
-        customer_name: bookingDetails.fullName,
-        customer_phone: bookingDetails.phone,
-        customer_email: bookingDetails.email || null,
-        service_name: initialQuery || null,
-        location: initialLocation || null,
-        preferred_date: bookingDetails.preferredDate,
-        preferred_time: bookingDetails.preferredTime || bookingDetails.customTime,
-        custom_time: bookingDetails.customTime || null,
-        workers_needed: bookingDetails.workersNeeded,
-        shift_preference: bookingDetails.shiftPreference,
-        hours_needed: bookingDetails.hoursNeeded,
-        payment_offer: bookingDetails.paymentOffer || null,
-        job_description: bookingDetails.jobDescription || null,
-        professional_id: professional.id,
-        professional_name: professional.name,
-        status: "confirmed",
-      });
-
-      if (error) throw error;
-
-      // Try to send SMS confirmation
-      try {
-        await supabase.functions.invoke("send-booking-sms", {
-          body: {
-            customerPhone: `+91${bookingDetails.phone}`,
-            customerName: bookingDetails.fullName,
-            professionalName: professional.name,
-            preferredDate: bookingDetails.preferredDate,
-            preferredTime: bookingDetails.preferredTime || bookingDetails.customTime,
-          },
-        });
-      } catch {
-        // SMS is best-effort, don't block the booking
-        console.log("SMS sending skipped or failed");
-      }
-
-      setHiredPro(professional.id);
-      toast({
-        title: "🎉 Booking Confirmed!",
-        description: `You have successfully hired ${professional.name}. A confirmation SMS has been sent to +91 ${bookingDetails.phone}.`,
-      });
-    } catch (err: any) {
-      toast({
-        title: "Booking Failed",
-        description: err.message || "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setHiring(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -188,7 +133,7 @@ const SearchPage = () => {
 
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
                 <h2 className="text-2xl font-bold text-foreground mb-2">Now Choose Your Professional</h2>
-                <p className="text-muted-foreground text-sm mb-6">Select a professional to complete your booking.</p>
+                <p className="text-muted-foreground text-sm mb-6">Click on a professional to view their full profile and hire them.</p>
 
                 <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
                   <div className="flex items-center gap-2 flex-1 px-4 py-3 rounded-xl bg-card border border-border">
@@ -262,9 +207,6 @@ const SearchPage = () => {
                       hourlyRate: pro.hourly_rate ? `₹${pro.hourly_rate}/hr` : undefined,
                     }}
                     index={i}
-                    showHireButton={true}
-                    hiring={hiring}
-                    onHire={handleHire}
                   />
                 ))}
               </div>

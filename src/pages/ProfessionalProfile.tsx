@@ -3,16 +3,33 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, BadgeCheck, Star, MapPin, Phone, MessageCircle,
-  Clock, Briefcase, Award, Shield,
+  Clock, Briefcase, Award, Shield, CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Professional = Tables<"professionals"> & { categories: { name: string } | null };
 type Review = Tables<"reviews">;
+
+interface PendingBooking {
+  fullName: string;
+  phone: string;
+  email?: string;
+  preferredDate: string;
+  preferredTime: string;
+  customTime?: string;
+  workersNeeded: number;
+  shiftPreference: string;
+  hoursNeeded: number;
+  paymentOffer?: string;
+  jobDescription?: string;
+  serviceName?: string;
+  location?: string;
+}
 
 const ProfessionalProfile = () => {
   const { id } = useParams();
@@ -20,6 +37,16 @@ const ProfessionalProfile = () => {
   const [professional, setProfessional] = useState<Professional | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hiring, setHiring] = useState(false);
+  const [hired, setHired] = useState(false);
+  const [pendingBooking, setPendingBooking] = useState<PendingBooking | null>(null);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem("pendingBooking");
+    if (stored) {
+      try { setPendingBooking(JSON.parse(stored)); } catch { /* ignore */ }
+    }
+  }, []);
 
   useEffect(() => {
     if (id) fetchProfessional();
@@ -227,6 +254,94 @@ const ProfessionalProfile = () => {
                 )}
               </div>
             </div>
+
+            {/* Hire Button - only shown when customer has pending booking */}
+            {pendingBooking && !hired && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6 p-6 rounded-2xl bg-card border border-accent/30 shadow-medium"
+              >
+                <p className="text-sm text-muted-foreground mb-4">
+                  Ready to hire <strong className="text-foreground">{professional.full_name}</strong> for your booking on <strong className="text-foreground">{pendingBooking.preferredDate}</strong>?
+                </p>
+                <Button
+                  size="lg"
+                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl font-semibold text-base"
+                  disabled={hiring}
+                  onClick={async () => {
+                    setHiring(true);
+                    try {
+                      const { error } = await supabase.from("bookings").insert({
+                        customer_name: pendingBooking.fullName,
+                        customer_phone: pendingBooking.phone,
+                        customer_email: pendingBooking.email || null,
+                        service_name: pendingBooking.serviceName || null,
+                        location: pendingBooking.location || null,
+                        preferred_date: pendingBooking.preferredDate,
+                        preferred_time: pendingBooking.preferredTime || pendingBooking.customTime,
+                        custom_time: pendingBooking.customTime || null,
+                        workers_needed: pendingBooking.workersNeeded,
+                        shift_preference: pendingBooking.shiftPreference,
+                        hours_needed: pendingBooking.hoursNeeded,
+                        payment_offer: pendingBooking.paymentOffer || null,
+                        job_description: pendingBooking.jobDescription || null,
+                        professional_id: professional.id,
+                        professional_name: professional.full_name,
+                        status: "confirmed",
+                      });
+                      if (error) throw error;
+
+                      try {
+                        await supabase.functions.invoke("send-booking-sms", {
+                          body: {
+                            customerPhone: `+91${pendingBooking.phone}`,
+                            customerName: pendingBooking.fullName,
+                            professionalName: professional.full_name,
+                            preferredDate: pendingBooking.preferredDate,
+                            preferredTime: pendingBooking.preferredTime || pendingBooking.customTime,
+                          },
+                        });
+                      } catch { console.log("SMS sending skipped or failed"); }
+
+                      sessionStorage.removeItem("pendingBooking");
+                      setHired(true);
+                      toast({
+                        title: "🎉 Booking Confirmed!",
+                        description: `You have successfully hired ${professional.full_name}. A confirmation SMS has been sent to +91 ${pendingBooking.phone}.`,
+                      });
+                    } catch (err: any) {
+                      toast({
+                        title: "Booking Failed",
+                        description: err.message || "Something went wrong. Please try again.",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setHiring(false);
+                    }
+                  }}
+                >
+                  {hiring ? "Processing..." : "👉 Hire this Professional"}
+                </Button>
+              </motion.div>
+            )}
+
+            {hired && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="mt-6 p-6 rounded-2xl bg-accent/10 border border-accent/30 text-center"
+              >
+                <CheckCircle2 className="w-12 h-12 text-accent mx-auto mb-3" />
+                <h3 className="text-lg font-bold text-foreground mb-1">Booking Confirmed!</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  You have successfully hired <strong>{professional.full_name}</strong>.
+                </p>
+                <Button onClick={() => navigate("/")} className="bg-accent text-accent-foreground hover:bg-accent/90 rounded-xl">
+                  Back to Home
+                </Button>
+              </motion.div>
+            )}
           </motion.div>
         </div>
       </div>
