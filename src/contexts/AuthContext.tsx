@@ -9,6 +9,8 @@ interface AuthContextType {
   isAdmin: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithOtp: (phone: string) => Promise<void>;
+  verifyOtp: (phone: string, token: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -23,7 +25,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const initializedRef = useRef(false);
 
   const checkAdmin = async (userId: string) => {
-    // Cache admin status to avoid repeated DB calls
     if (adminCacheRef.current[userId] !== undefined) {
       setIsAdmin(adminCacheRef.current[userId]);
       return;
@@ -38,7 +39,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Get session first, then set up listener
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -51,9 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        // Skip if not initialized yet (getSession handles initial state)
         if (!initializedRef.current) return;
-        
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -85,6 +83,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (error) throw error;
   };
 
+  const signInWithOtp = async (phone: string) => {
+    const { error } = await supabase.auth.signInWithOtp({ phone });
+    if (error) throw error;
+  };
+
+  const verifyOtp = async (phone: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({ phone, token, type: "sms" });
+    if (error) throw error;
+  };
+
   const signOut = async () => {
     adminCacheRef.current = {};
     const { error } = await supabase.auth.signOut();
@@ -92,7 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, signUp, signIn, signInWithOtp, verifyOtp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

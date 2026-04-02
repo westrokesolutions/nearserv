@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Shield, Award, LogOut, LayoutDashboard, Menu, X } from "lucide-react";
+import { MapPin, Shield, Award, LogOut, LayoutDashboard, Menu, X, UserCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
@@ -37,11 +37,18 @@ const Navbar = () => {
             </Link>
           )}
           <Link
+            to="/profile"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <UserCircle className="w-4 h-4" />
+            My Profile
+          </Link>
+          <Link
             to="/dashboard"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <LayoutDashboard className="w-4 h-4" />
-            My Dashboard
+            Pro Dashboard
           </Link>
           <Link
             to="/register"
@@ -143,11 +150,20 @@ const Navbar = () => {
                         )}
                         <SheetClose asChild>
                           <Link
+                            to="/profile"
+                            className="inline-flex items-center gap-1.5 text-base font-medium text-foreground hover:text-accent transition-colors"
+                          >
+                            <UserCircle className="w-4 h-4" />
+                            My Profile
+                          </Link>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <Link
                             to="/dashboard"
                             className="inline-flex items-center gap-1.5 text-base font-medium text-foreground hover:text-accent transition-colors"
                           >
                             <LayoutDashboard className="w-4 h-4" />
-                            My Dashboard
+                            Pro Dashboard
                           </Link>
                         </SheetClose>
                         <SheetClose asChild>

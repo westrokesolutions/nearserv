@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, User, ArrowRight, Shield } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Shield, Phone, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -13,16 +14,54 @@ import { toast } from "@/hooks/use-toast";
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isAdminLogin, setIsAdminLogin] = useState(false);
+  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("phone");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signInWithOtp, verifyOtp } = useAuth();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(window.location.search);
   const redirectTo = searchParams.get("redirect") || "/";
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSendOtp = async () => {
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      toast({ title: "Invalid Phone", description: "Enter a valid 10-digit mobile number.", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      await signInWithOtp(`+91${phone}`);
+      setOtpSent(true);
+      toast({ title: "OTP Sent!", description: `A verification code has been sent to +91 ${phone}` });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otp.length !== 6) {
+      toast({ title: "Invalid OTP", description: "Please enter the 6-digit code.", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      await verifyOtp(`+91${phone}`, otp);
+      toast({ title: "Welcome!" });
+      navigate(redirectTo);
+    } catch (error: any) {
+      toast({ title: "Verification Failed", description: error.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
@@ -32,7 +71,6 @@ const Auth = () => {
         navigate(isAdminLogin ? "/admin" : redirectTo);
       } else {
         await signUp(email, password, fullName);
-        // Auto-confirm is enabled, so sign in immediately
         await signIn(email, password);
         toast({ title: "Account created! Welcome to NearServ." });
         navigate(redirectTo);
@@ -41,11 +79,7 @@ const Auth = () => {
       const message = error.message === "Failed to fetch"
         ? "Network error. Please check your connection and try again."
         : error.message;
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -89,79 +123,177 @@ const Auth = () => {
                 checked={isAdminLogin}
                 onCheckedChange={(checked) => {
                   setIsAdminLogin(checked);
-                  if (checked) setIsLogin(true);
+                  if (checked) { setIsLogin(true); setLoginMethod("email"); }
                 }}
               />
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && !isAdminLogin && (
+            {/* Login method toggle (not shown for admin) */}
+            {!isAdminLogin && isLogin && (
+              <div className="flex gap-2 mb-6">
+                <button
+                  onClick={() => { setLoginMethod("phone"); setOtpSent(false); setOtp(""); }}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                    loginMethod === "phone"
+                      ? "bg-accent text-accent-foreground border-accent"
+                      : "bg-card border-border text-muted-foreground hover:border-accent/50"
+                  }`}
+                >
+                  <Smartphone className="w-4 h-4" />
+                  Mobile OTP
+                </button>
+                <button
+                  onClick={() => setLoginMethod("email")}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                    loginMethod === "email"
+                      ? "bg-accent text-accent-foreground border-accent"
+                      : "bg-card border-border text-muted-foreground hover:border-accent/50"
+                  }`}
+                >
+                  <Mail className="w-4 h-4" />
+                  Email
+                </button>
+              </div>
+            )}
+
+            {/* Phone OTP login */}
+            {loginMethod === "phone" && isLogin && !isAdminLogin ? (
+              <div className="space-y-4">
+                {!otpSent ? (
+                  <>
+                    <div>
+                      <Label htmlFor="phone" className="flex items-center gap-2 mb-1.5">
+                        <Phone className="w-4 h-4 text-accent" />
+                        Mobile Number
+                      </Label>
+                      <div className="flex">
+                        <span className="flex items-center px-3 bg-secondary rounded-l-md border border-r-0 border-input text-sm text-muted-foreground">+91</span>
+                        <Input
+                          id="phone"
+                          placeholder="9876543210"
+                          maxLength={10}
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                          className="rounded-l-none"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      onClick={handleSendOtp}
+                      disabled={loading}
+                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
+                    >
+                      {loading ? "Sending..." : "Send OTP"}
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-center mb-2">
+                      <p className="text-sm text-muted-foreground">
+                        Enter the 6-digit code sent to <strong className="text-foreground">+91 {phone}</strong>
+                      </p>
+                    </div>
+                    <div className="flex justify-center">
+                      <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+                    <Button
+                      onClick={handleVerifyOtp}
+                      disabled={loading}
+                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
+                    >
+                      {loading ? "Verifying..." : "Verify & Sign In"}
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                    <button
+                      onClick={() => { setOtpSent(false); setOtp(""); }}
+                      className="text-sm text-muted-foreground hover:text-foreground w-full text-center transition-colors"
+                    >
+                      Change number
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : (
+              /* Email login / signup form */
+              <form onSubmit={handleEmailSubmit} className="space-y-4">
+                {!isLogin && !isAdminLogin && (
+                  <div>
+                    <Label htmlFor="fullName">Full Name</Label>
+                    <div className="relative mt-1.5">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="fullName"
+                        placeholder="Your full name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
                 <div>
-                  <Label htmlFor="fullName">Full Name</Label>
+                  <Label htmlFor="email">Email</Label>
                   <div className="relative mt-1.5">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      id="fullName"
-                      placeholder="Your full name"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
+                      id="email"
+                      type="email"
+                      placeholder={isAdminLogin ? "admin@nearserv.com" : "you@example.com"}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       className="pl-10"
                       required
                     />
                   </div>
                 </div>
-              )}
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <div className="relative mt-1.5">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder={isAdminLogin ? "admin@nearserv.com" : "you@example.com"}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                    required
-                  />
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative mt-1.5">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-10"
+                      required
+                      minLength={6}
+                    />
+                  </div>
                 </div>
-              </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <div className="relative mt-1.5">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10"
-                    required
-                    minLength={6}
-                  />
-                </div>
-              </div>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
-              >
-                {loading
-                  ? "Please wait..."
-                  : isAdminLogin
-                  ? "Sign In to Dashboard"
-                  : isLogin
-                  ? "Sign In"
-                  : "Create Account"}
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </form>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
+                >
+                  {loading
+                    ? "Please wait..."
+                    : isAdminLogin
+                    ? "Sign In to Dashboard"
+                    : isLogin
+                    ? "Sign In"
+                    : "Create Account"}
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </form>
+            )}
 
             {!isAdminLogin && (
               <div className="mt-6 text-center">
                 <button
-                  onClick={() => setIsLogin(!isLogin)}
+                  onClick={() => { setIsLogin(!isLogin); setLoginMethod(isLogin ? "email" : "phone"); setOtpSent(false); setOtp(""); }}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {isLogin ? "Don't have an account? " : "Already have an account? "}
