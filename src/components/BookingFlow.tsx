@@ -15,6 +15,8 @@ export type BookingDetails = {
   customTime: string;
   workersNeeded: number;
   shiftPreference: "day" | "night";
+  hoursNeeded: number;
+  paymentOffer: string;
   jobDescription: string;
 };
 
