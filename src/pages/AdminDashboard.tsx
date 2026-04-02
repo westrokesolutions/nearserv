@@ -32,6 +32,7 @@ const AdminDashboard = () => {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedPro, setExpandedPro] = useState<string | null>(null);
   const [showCreatePro, setShowCreatePro] = useState(false);
