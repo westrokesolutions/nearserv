@@ -72,6 +72,12 @@ const SearchPage = () => {
   const handleBookingComplete = (details: BookingDetails) => {
     setBookingDetails(details);
     setBookingComplete(true);
+    // Store booking details for the profile page hire button
+    sessionStorage.setItem("pendingBooking", JSON.stringify({
+      ...details,
+      serviceName: initialQuery || null,
+      location: initialLocation || null,
+    }));
   };
 
   const handleHire = async (professional: Professional) => {
