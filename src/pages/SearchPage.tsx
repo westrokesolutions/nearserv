@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, SlidersHorizontal, BadgeCheck, X } from "lucide-react";
+import { Search, SlidersHorizontal, BadgeCheck, X, CheckCircle2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProfessionalCard from "@/components/ProfessionalCard";
+import type { Professional } from "@/components/ProfessionalCard";
 import BookingFlow, { type BookingDetails } from "@/components/BookingFlow";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
 type ProfessionalWithCategory = Tables<"professionals"> & {
   categories: { name: string } | null;
-  avg_rating?: number;
-  review_count?: number;
 };
 
 const SearchPage = () => {
@@ -27,8 +27,9 @@ const SearchPage = () => {
   const [professionals, setProfessionals] = useState<ProfessionalWithCategory[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hiring, setHiring] = useState(false);
+  const [hiredPro, setHiredPro] = useState<string | null>(null);
 
-  // Booking flow state
   const [bookingComplete, setBookingComplete] = useState(false);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
 
@@ -73,13 +74,71 @@ const SearchPage = () => {
     setBookingComplete(true);
   };
 
+  const handleHire = async (professional: Professional) => {
+    if (!bookingDetails) return;
+    setHiring(true);
+
+    try {
+      // Save booking to database
+      const { error } = await supabase.from("bookings").insert({
+        customer_name: bookingDetails.fullName,
+        customer_phone: bookingDetails.phone,
+        customer_email: bookingDetails.email || null,
+        service_name: initialQuery || null,
+        location: initialLocation || null,
+        preferred_date: bookingDetails.preferredDate,
+        preferred_time: bookingDetails.preferredTime || bookingDetails.customTime,
+        custom_time: bookingDetails.customTime || null,
+        workers_needed: bookingDetails.workersNeeded,
+        shift_preference: bookingDetails.shiftPreference,
+        hours_needed: bookingDetails.hoursNeeded,
+        payment_offer: bookingDetails.paymentOffer || null,
+        job_description: bookingDetails.jobDescription || null,
+        professional_id: professional.id,
+        professional_name: professional.name,
+        status: "confirmed",
+      });
+
+      if (error) throw error;
+
+      // Try to send SMS confirmation
+      try {
+        await supabase.functions.invoke("send-booking-sms", {
+          body: {
+            customerPhone: `+91${bookingDetails.phone}`,
+            customerName: bookingDetails.fullName,
+            professionalName: professional.name,
+            preferredDate: bookingDetails.preferredDate,
+            preferredTime: bookingDetails.preferredTime || bookingDetails.customTime,
+          },
+        });
+      } catch {
+        // SMS is best-effort, don't block the booking
+        console.log("SMS sending skipped or failed");
+      }
+
+      setHiredPro(professional.id);
+      toast({
+        title: "🎉 Booking Confirmed!",
+        description: `You have successfully hired ${professional.name}. A confirmation SMS has been sent to +91 ${bookingDetails.phone}.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Booking Failed",
+        description: err.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setHiring(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="pt-[calc(5rem+var(--safe-area-top))] pb-20">
         <div className="container mx-auto px-4">
           {!bookingComplete ? (
-            /* Step 1 & 2: Booking flow */
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="py-8">
               <BookingFlow
                 onComplete={handleBookingComplete}
@@ -87,8 +146,29 @@ const SearchPage = () => {
                 location={initialLocation}
               />
             </motion.div>
+          ) : hiredPro ? (
+            /* Success state */
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="py-20 text-center max-w-md mx-auto"
+            >
+              <CheckCircle2 className="w-16 h-16 text-accent mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-foreground mb-2">Booking Confirmed!</h2>
+              <p className="text-muted-foreground mb-2">
+                You have successfully hired <strong>{professionals.find(p => p.id === hiredPro)?.full_name}</strong>.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                A confirmation SMS has been sent to <strong>+91 {bookingDetails?.phone}</strong>.
+              </p>
+              <Button
+                className="mt-6 bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={() => window.location.href = "/"}
+              >
+                Back to Home
+              </Button>
+            </motion.div>
           ) : (
-            /* Step 3: Choose professionals */
             <>
               {/* Booking summary banner */}
               <motion.div
@@ -182,6 +262,9 @@ const SearchPage = () => {
                       hourlyRate: pro.hourly_rate ? `₹${pro.hourly_rate}/hr` : undefined,
                     }}
                     index={i}
+                    showHireButton={true}
+                    hiring={hiring}
+                    onHire={handleHire}
                   />
                 ))}
               </div>

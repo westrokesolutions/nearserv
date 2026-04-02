@@ -5,7 +5,7 @@ import {
   Users, CheckCircle, XCircle, Clock, Shield, Star,
   BarChart3, Eye, Trash2, RefreshCw, TrendingUp,
   FolderOpen, MessageSquare, Activity, LogOut,
-  MapPin, ChevronDown, ChevronUp, Plus,
+  MapPin, ChevronDown, ChevronUp, Plus, ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,14 +23,16 @@ import type { Tables } from "@/integrations/supabase/types";
 type Professional = Tables<"professionals"> & { categories?: { name: string } | null };
 type Review = Tables<"reviews"> & { professionals?: { full_name: string } | null };
 type Category = Tables<"categories">;
+type Booking = Tables<"bookings">;
 
 const AdminDashboard = () => {
   const { user, isAdmin, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "professionals" | "reviews" | "categories">("overview");
+  const [tab, setTab] = useState<"overview" | "professionals" | "reviews" | "categories" | "bookings">("overview");
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedPro, setExpandedPro] = useState<string | null>(null);
   const [showCreatePro, setShowCreatePro] = useState(false);
@@ -62,14 +64,16 @@ const AdminDashboard = () => {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [prosRes, revRes, catRes] = await Promise.all([
+    const [prosRes, revRes, catRes, bookRes] = await Promise.all([
       supabase.from("professionals").select("*, categories(name)").order("created_at", { ascending: false }),
       supabase.from("reviews").select("*, professionals(full_name)").order("created_at", { ascending: false }),
       supabase.from("categories").select("*").order("name"),
+      supabase.from("bookings").select("*").order("created_at", { ascending: false }),
     ]);
     if (prosRes.data) setProfessionals(prosRes.data as Professional[]);
     if (revRes.data) setReviews(revRes.data as Review[]);
     if (catRes.data) setCategories(catRes.data);
+    if (bookRes.data) setBookings(bookRes.data);
     setLoading(false);
   }, []);
 
@@ -86,6 +90,7 @@ const AdminDashboard = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "professionals" }, () => fetchData())
       .on("postgres_changes", { event: "*", schema: "public", table: "reviews" }, () => fetchData())
       .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => fetchData())
       .subscribe();
 
     return () => {
@@ -231,6 +236,7 @@ const AdminDashboard = () => {
 
   const tabs = [
     { key: "overview" as const, label: "Overview", icon: BarChart3 },
+    { key: "bookings" as const, label: "Bookings", icon: ClipboardList, badge: bookings.length },
     { key: "professionals" as const, label: "Professionals", icon: Users, badge: pendingPros.length },
     { key: "reviews" as const, label: "Reviews", icon: MessageSquare, badge: pendingReviews.length },
     { key: "categories" as const, label: "Categories", icon: FolderOpen },
@@ -697,6 +703,102 @@ const AdminDashboard = () => {
                       </Button>
                     </div>
                   </div>
+                </div>
+              ))
+            )}
+          </motion.div>
+        )}
+
+        {/* BOOKINGS TAB */}
+        {tab === "bookings" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            <div className="flex gap-2 flex-wrap text-xs mb-2">
+              <span className="px-2.5 py-1 rounded-full bg-secondary text-foreground font-medium">All ({bookings.length})</span>
+              <span className="px-2.5 py-1 rounded-full bg-accent/10 text-accent font-medium">Confirmed ({bookings.filter(b => b.status === "confirmed").length})</span>
+            </div>
+
+            {bookings.length === 0 ? (
+              <p className="text-muted-foreground text-center py-16">No bookings yet.</p>
+            ) : (
+              bookings.map((booking) => (
+                <div key={booking.id} className="bg-card rounded-xl border border-border p-4 md:p-5">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <h3 className="font-semibold text-foreground text-sm">{booking.customer_name}</h3>
+                        <span className={`px-2 py-0.5 text-xs rounded-full border font-medium ${
+                          booking.status === "confirmed" ? "bg-accent/10 text-accent border-accent/20" : "bg-secondary text-muted-foreground border-border"
+                        }`}>
+                          {booking.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(booking.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Phone</p>
+                      <p className="font-medium text-foreground">+91 {booking.customer_phone}</p>
+                    </div>
+                    {booking.customer_email && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Email</p>
+                        <p className="font-medium text-foreground truncate">{booking.customer_email}</p>
+                      </div>
+                    )}
+                    {booking.service_name && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Service</p>
+                        <p className="font-medium text-foreground">{booking.service_name}</p>
+                      </div>
+                    )}
+                    {booking.location && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Location</p>
+                        <p className="font-medium text-foreground">{booking.location}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs text-muted-foreground">Date</p>
+                      <p className="font-medium text-foreground">{booking.preferred_date}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Time</p>
+                      <p className="font-medium text-foreground">{booking.preferred_time}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Shift</p>
+                      <p className="font-medium text-foreground capitalize">{booking.shift_preference}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Hours</p>
+                      <p className="font-medium text-foreground">{booking.hours_needed}h</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Workers</p>
+                      <p className="font-medium text-foreground">{booking.workers_needed}</p>
+                    </div>
+                    {booking.payment_offer && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Payment Offer</p>
+                        <p className="font-medium text-foreground">₹{booking.payment_offer}</p>
+                      </div>
+                    )}
+                    {booking.professional_name && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Hired Professional</p>
+                        <p className="font-medium text-accent">{booking.professional_name}</p>
+                      </div>
+                    )}
+                  </div>
+                  {booking.job_description && (
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <p className="text-xs text-muted-foreground mb-1">Job Description</p>
+                      <p className="text-sm text-foreground whitespace-pre-line">{booking.job_description}</p>
+                    </div>
+                  )}
                 </div>
               ))
             )}

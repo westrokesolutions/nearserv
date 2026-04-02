@@ -65,9 +65,12 @@ export const mockProfessionals: Professional[] = [
 interface ProfessionalCardProps {
   professional: Professional;
   index?: number;
+  onHire?: (professional: Professional) => void;
+  showHireButton?: boolean;
+  hiring?: boolean;
 }
 
-const ProfessionalCard = ({ professional, index = 0 }: ProfessionalCardProps) => {
+const ProfessionalCard = ({ professional, index = 0, onHire, showHireButton = false, hiring = false }: ProfessionalCardProps) => {
   const navigate = useNavigate();
 
   return (
@@ -76,8 +79,7 @@ const ProfessionalCard = ({ professional, index = 0 }: ProfessionalCardProps) =>
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.08 }}
-      onClick={() => navigate(`/professional/${professional.id}`)}
-      className={`group cursor-pointer rounded-2xl bg-card border transition-all duration-300 hover:shadow-elevated overflow-hidden ${
+      className={`group rounded-2xl bg-card border transition-all duration-300 hover:shadow-elevated overflow-hidden ${
         professional.premium ? "border-gold/40 ring-1 ring-gold/20" : "border-border hover:border-accent/30"
       }`}
     >
@@ -86,7 +88,7 @@ const ProfessionalCard = ({ professional, index = 0 }: ProfessionalCardProps) =>
           ⭐ FEATURED PROFESSIONAL
         </div>
       )}
-      <div className="p-5">
+      <div className="p-5 cursor-pointer" onClick={() => navigate(`/professional/${professional.id}`)}>
         <div className="flex items-start gap-4">
           <img
             src={professional.avatar}
@@ -121,6 +123,17 @@ const ProfessionalCard = ({ professional, index = 0 }: ProfessionalCardProps) =>
           </span>
         </div>
       </div>
+      {showHireButton && onHire && (
+        <div className="px-5 pb-5">
+          <button
+            onClick={(e) => { e.stopPropagation(); onHire(professional); }}
+            disabled={hiring}
+            className="w-full py-3 rounded-xl bg-accent text-accent-foreground font-semibold text-sm hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {hiring ? "Processing..." : "👉 Hire this Professional"}
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 };
