@@ -14,6 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          created_at: string
+          custom_time: string | null
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string
+          hours_needed: number
+          id: string
+          job_description: string | null
+          location: string | null
+          payment_offer: string | null
+          preferred_date: string
+          preferred_time: string
+          professional_id: string | null
+          professional_name: string | null
+          service_name: string | null
+          shift_preference: string
+          status: string
+          workers_needed: number
+        }
+        Insert: {
+          created_at?: string
+          custom_time?: string | null
+          customer_email?: string | null
+          customer_name: string
+          customer_phone: string
+          hours_needed?: number
+          id?: string
+          job_description?: string | null
+          location?: string | null
+          payment_offer?: string | null
+          preferred_date: string
+          preferred_time: string
+          professional_id?: string | null
+          professional_name?: string | null
+          service_name?: string | null
+          shift_preference?: string
+          status?: string
+          workers_needed?: number
+        }
+        Update: {
+          created_at?: string
+          custom_time?: string | null
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string
+          hours_needed?: number
+          id?: string
+          job_description?: string | null
+          location?: string | null
+          payment_offer?: string | null
+          preferred_date?: string
+          preferred_time?: string
+          professional_id?: string | null
+          professional_name?: string | null
+          service_name?: string | null
+          shift_preference?: string
+          status?: string
+          workers_needed?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
