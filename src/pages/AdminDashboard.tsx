@@ -236,6 +236,7 @@ const AdminDashboard = () => {
 
   const tabs = [
     { key: "overview" as const, label: "Overview", icon: BarChart3 },
+    { key: "bookings" as const, label: "Bookings", icon: ClipboardList, badge: bookings.length },
     { key: "professionals" as const, label: "Professionals", icon: Users, badge: pendingPros.length },
     { key: "reviews" as const, label: "Reviews", icon: MessageSquare, badge: pendingReviews.length },
     { key: "categories" as const, label: "Categories", icon: FolderOpen },
