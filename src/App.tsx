@@ -13,6 +13,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProfessionalDashboard from "./pages/ProfessionalDashboard";
 import CustomerProfile from "./pages/CustomerProfile";
+import ResetPassword from "./pages/ResetPassword";
 import CategoryDetail from "./pages/CategoryDetail";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/dashboard" element={<ProfessionalDashboard />} />
             <Route path="/profile" element={<CustomerProfile />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

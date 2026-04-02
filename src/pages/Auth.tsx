@@ -289,6 +289,15 @@ const Auth = () => {
                     />
                   </div>
                 </div>
+                {(isLogin || isAdminLogin) && (
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-sm text-accent hover:underline transition-colors"
+                  >
+                    Forgot Password?
+                  </button>
+                )}
                 <Button
                   type="submit"
                   disabled={loading}
