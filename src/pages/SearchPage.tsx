@@ -5,7 +5,6 @@ import { Search, SlidersHorizontal, BadgeCheck, X, CheckCircle2 } from "lucide-r
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProfessionalCard from "@/components/ProfessionalCard";
-import type { Professional } from "@/components/ProfessionalCard";
 import BookingFlow, { type BookingDetails } from "@/components/BookingFlow";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
