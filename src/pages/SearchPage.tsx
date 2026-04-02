@@ -27,7 +27,6 @@ const SearchPage = () => {
   const [professionals, setProfessionals] = useState<ProfessionalWithCategory[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hiring, setHiring] = useState(false);
   const [hiredPro, setHiredPro] = useState<string | null>(null);
 
   const [bookingComplete, setBookingComplete] = useState(false);
