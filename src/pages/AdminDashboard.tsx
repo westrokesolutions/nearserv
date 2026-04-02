@@ -90,6 +90,7 @@ const AdminDashboard = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "professionals" }, () => fetchData())
       .on("postgres_changes", { event: "*", schema: "public", table: "reviews" }, () => fetchData())
       .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => fetchData())
       .subscribe();
 
     return () => {
