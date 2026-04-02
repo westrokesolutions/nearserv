@@ -79,64 +79,6 @@ const SearchPage = () => {
     }));
   };
 
-  const handleHire = async (professional: Professional) => {
-    if (!bookingDetails) return;
-    setHiring(true);
-
-    try {
-      // Save booking to database
-      const { error } = await supabase.from("bookings").insert({
-        customer_name: bookingDetails.fullName,
-        customer_phone: bookingDetails.phone,
-        customer_email: bookingDetails.email || null,
-        service_name: initialQuery || null,
-        location: initialLocation || null,
-        preferred_date: bookingDetails.preferredDate,
-        preferred_time: bookingDetails.preferredTime || bookingDetails.customTime,
-        custom_time: bookingDetails.customTime || null,
-        workers_needed: bookingDetails.workersNeeded,
-        shift_preference: bookingDetails.shiftPreference,
-        hours_needed: bookingDetails.hoursNeeded,
-        payment_offer: bookingDetails.paymentOffer || null,
-        job_description: bookingDetails.jobDescription || null,
-        professional_id: professional.id,
-        professional_name: professional.name,
-        status: "confirmed",
-      });
-
-      if (error) throw error;
-
-      // Try to send SMS confirmation
-      try {
-        await supabase.functions.invoke("send-booking-sms", {
-          body: {
-            customerPhone: `+91${bookingDetails.phone}`,
-            customerName: bookingDetails.fullName,
-            professionalName: professional.name,
-            preferredDate: bookingDetails.preferredDate,
-            preferredTime: bookingDetails.preferredTime || bookingDetails.customTime,
-          },
-        });
-      } catch {
-        // SMS is best-effort, don't block the booking
-        console.log("SMS sending skipped or failed");
-      }
-
-      setHiredPro(professional.id);
-      toast({
-        title: "🎉 Booking Confirmed!",
-        description: `You have successfully hired ${professional.name}. A confirmation SMS has been sent to +91 ${bookingDetails.phone}.`,
-      });
-    } catch (err: any) {
-      toast({
-        title: "Booking Failed",
-        description: err.message || "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setHiring(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
