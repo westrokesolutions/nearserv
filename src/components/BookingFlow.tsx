@@ -15,6 +15,8 @@ export type BookingDetails = {
   customTime: string;
   workersNeeded: number;
   shiftPreference: "day" | "night";
+  hoursNeeded: number;
+  paymentOffer: string;
   jobDescription: string;
 };
 
@@ -41,6 +43,8 @@ const BookingFlow = ({ onComplete, serviceName, location }: Props) => {
     customTime: "",
     workersNeeded: 1,
     shiftPreference: "day",
+    hoursNeeded: 1,
+    paymentOffer: "",
     jobDescription: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -302,6 +306,45 @@ const BookingFlow = ({ onComplete, serviceName, location }: Props) => {
                     <Moon className="w-4 h-4" />
                     Night Shift
                   </button>
+                </div>
+              </div>
+
+              <div>
+                <Label className="flex items-center gap-2 mb-1.5">
+                  <Clock className="w-4 h-4 text-accent" />
+                  For how many hours do you need the professional?
+                </Label>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setDetails({ ...details, hoursNeeded: Math.max(1, details.hoursNeeded - 1) })}
+                    className="w-10 h-10 rounded-lg bg-secondary text-foreground font-bold text-lg flex items-center justify-center hover:bg-accent/10 transition-colors"
+                  >
+                    −
+                  </button>
+                  <span className="text-xl font-bold text-foreground w-10 text-center">{details.hoursNeeded}</span>
+                  <button
+                    onClick={() => setDetails({ ...details, hoursNeeded: Math.min(24, details.hoursNeeded + 1) })}
+                    className="w-10 h-10 rounded-lg bg-secondary text-foreground font-bold text-lg flex items-center justify-center hover:bg-accent/10 transition-colors"
+                  >
+                    +
+                  </button>
+                  <span className="text-sm text-muted-foreground ml-1">hour(s)</span>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="paymentOffer" className="flex items-center gap-2 mb-1.5">
+                  💰 How much payment will you offer?
+                </Label>
+                <div className="flex">
+                  <span className="flex items-center px-3 bg-secondary rounded-l-md border border-r-0 border-input text-sm text-muted-foreground">₹</span>
+                  <Input
+                    id="paymentOffer"
+                    placeholder="e.g. 500"
+                    value={details.paymentOffer}
+                    onChange={(e) => setDetails({ ...details, paymentOffer: e.target.value.replace(/\D/g, "") })}
+                    className="rounded-l-none"
+                  />
                 </div>
               </div>
 
