@@ -43,6 +43,8 @@ const BookingFlow = ({ onComplete, serviceName, location }: Props) => {
     customTime: "",
     workersNeeded: 1,
     shiftPreference: "day",
+    hoursNeeded: 1,
+    paymentOffer: "",
     jobDescription: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
