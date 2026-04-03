@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, SlidersHorizontal, BadgeCheck, X, CheckCircle2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -9,6 +9,7 @@ import BookingFlow, { type BookingDetails } from "@/components/BookingFlow";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { useAuth } from "@/contexts/AuthContext";
 
 type ProfessionalWithCategory = Tables<"professionals"> & {
   categories: { name: string } | null;
@@ -16,8 +17,19 @@ type ProfessionalWithCategory = Tables<"professionals"> & {
 
 const SearchPage = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const initialQuery = searchParams.get("q") || "";
   const initialLocation = searchParams.get("loc") || "";
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      const returnUrl = `/search?q=${encodeURIComponent(initialQuery)}&loc=${encodeURIComponent(initialLocation)}`;
+      navigate(`/auth?redirect=${encodeURIComponent(returnUrl)}`);
+    }
+  }, [authLoading, user, navigate, initialQuery, initialLocation]);
+
   const [query, setQuery] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
@@ -34,6 +46,15 @@ const SearchPage = () => {
     fetchCategories();
     fetchProfessionals();
   }, []);
+
+  // Don't render anything while checking auth or redirecting
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   const fetchCategories = async () => {
     const { data } = await supabase
