@@ -69,6 +69,10 @@ const RegisterProfessional = () => {
   const [submitting, setSubmitting] = useState(false);
   const [direction, setDirection] = useState(1);
   const [detectingLocation, setDetectingLocation] = useState(false);
+  const [showSuggestDialog, setShowSuggestDialog] = useState(false);
+  const [suggestName, setSuggestName] = useState("");
+  const [suggestDescription, setSuggestDescription] = useState("");
+  const [suggestSubmitting, setSuggestSubmitting] = useState(false);
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
