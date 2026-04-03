@@ -352,6 +352,14 @@ const RegisterProfessional = () => {
                           {cat.name}
                         </button>
                       ))}
+                      {/* Suggest category button */}
+                      <button
+                        onClick={() => setShowSuggestDialog(true)}
+                        className="p-4 rounded-xl text-sm font-medium text-left border border-dashed border-accent/40 bg-accent/5 text-accent hover:bg-accent/10 transition-all flex items-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Suggest a Category
+                      </button>
                     </div>
                     {selectedCategory?.description && (
                       <div className="bg-secondary/50 rounded-xl border border-border p-4 mt-2">
