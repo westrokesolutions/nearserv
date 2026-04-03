@@ -29,6 +29,7 @@ const SearchPage = () => {
       navigate(`/auth?redirect=${encodeURIComponent(returnUrl)}`);
     }
   }, [authLoading, user, navigate, initialQuery, initialLocation]);
+
   const [query, setQuery] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
@@ -41,6 +42,11 @@ const SearchPage = () => {
   const [bookingComplete, setBookingComplete] = useState(false);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
 
+  useEffect(() => {
+    fetchCategories();
+    fetchProfessionals();
+  }, []);
+
   // Don't render anything while checking auth or redirecting
   if (authLoading || !user) {
     return (
@@ -49,11 +55,6 @@ const SearchPage = () => {
       </div>
     );
   }
-
-  useEffect(() => {
-    fetchCategories();
-    fetchProfessionals();
-  }, []);
 
   const fetchCategories = async () => {
     const { data } = await supabase
