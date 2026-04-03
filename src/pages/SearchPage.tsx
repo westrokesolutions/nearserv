@@ -41,6 +41,15 @@ const SearchPage = () => {
   const [bookingComplete, setBookingComplete] = useState(false);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
 
+  // Don't render anything while checking auth or redirecting
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
   useEffect(() => {
     fetchCategories();
     fetchProfessionals();
