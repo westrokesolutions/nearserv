@@ -4,12 +4,15 @@ import { useNavigate } from "react-router-dom";
 import {
   User, Briefcase, FileText, MapPin, Camera,
   ArrowRight, ArrowLeft, Check, ChevronRight,
-  LocateFixed, Loader2, CreditCard,
+  LocateFixed, Loader2, CreditCard, Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import Navbar from "@/components/Navbar";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -66,6 +69,10 @@ const RegisterProfessional = () => {
   const [submitting, setSubmitting] = useState(false);
   const [direction, setDirection] = useState(1);
   const [detectingLocation, setDetectingLocation] = useState(false);
+  const [showSuggestDialog, setShowSuggestDialog] = useState(false);
+  const [suggestName, setSuggestName] = useState("");
+  const [suggestDescription, setSuggestDescription] = useState("");
+  const [suggestSubmitting, setSuggestSubmitting] = useState(false);
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
@@ -345,6 +352,14 @@ const RegisterProfessional = () => {
                           {cat.name}
                         </button>
                       ))}
+                      {/* Suggest category button */}
+                      <button
+                        onClick={() => setShowSuggestDialog(true)}
+                        className="p-4 rounded-xl text-sm font-medium text-left border border-dashed border-accent/40 bg-accent/5 text-accent hover:bg-accent/10 transition-all flex items-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Suggest a Category
+                      </button>
                     </div>
                     {selectedCategory?.description && (
                       <div className="bg-secondary/50 rounded-xl border border-border p-4 mt-2">
@@ -562,6 +577,72 @@ const RegisterProfessional = () => {
           </div>
         </div>
       </div>
+
+      {/* Suggest Category Dialog */}
+      <Dialog open={showSuggestDialog} onOpenChange={setShowSuggestDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Suggest a New Category</DialogTitle>
+            <DialogDescription>
+              Can't find your service category? Suggest one and our team will review it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="suggestName">Category Name *</Label>
+              <Input
+                id="suggestName"
+                placeholder="e.g. Solar Panel Installation"
+                value={suggestName}
+                onChange={(e) => setSuggestName(e.target.value)}
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="suggestDesc">Description (optional)</Label>
+              <Textarea
+                id="suggestDesc"
+                placeholder="Briefly describe the services this category would include..."
+                value={suggestDescription}
+                onChange={(e) => setSuggestDescription(e.target.value)}
+                className="mt-1.5"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSuggestDialog(false)}>Cancel</Button>
+            <Button
+              disabled={!suggestName.trim() || suggestSubmitting}
+              onClick={async () => {
+                if (!user) return;
+                setSuggestSubmitting(true);
+                try {
+                  const { error } = await supabase.from("category_suggestions" as any).insert({
+                    user_id: user.id,
+                    name: suggestName.trim(),
+                    description: suggestDescription.trim() || null,
+                  } as any);
+                  if (error) throw error;
+                  toast({
+                    title: "Suggestion submitted!",
+                    description: "Our team will review your category suggestion and add it if approved.",
+                  });
+                  setSuggestName("");
+                  setSuggestDescription("");
+                  setShowSuggestDialog(false);
+                } catch (err: any) {
+                  toast({ title: "Error", description: err.message, variant: "destructive" });
+                } finally {
+                  setSuggestSubmitting(false);
+                }
+              }}
+            >
+              {suggestSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Suggestion"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
