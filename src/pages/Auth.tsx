@@ -314,9 +314,25 @@ const Auth = () => {
                     Forgot Password?
                   </button>
                 )}
+                {!isAdminLogin && (
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="terms-email"
+                      checked={agreedToTerms}
+                      onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                      className="mt-0.5"
+                    />
+                    <label htmlFor="terms-email" className="text-sm text-muted-foreground leading-snug">
+                      I agree to the{" "}
+                      <Link to="/terms" className="text-accent hover:underline font-medium">Terms & Conditions</Link>
+                      {" "}and{" "}
+                      <Link to="/privacy" className="text-accent hover:underline font-medium">Privacy Policy</Link>
+                    </label>
+                  </div>
+                )}
                 <Button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || (!isAdminLogin && !agreedToTerms)}
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
                 >
                   {loading
