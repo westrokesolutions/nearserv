@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, User, ArrowRight, Shield, Phone, Smartphone } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Shield, Phone, Smartphone, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +23,7 @@ const Auth = () => {
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const { signIn, signUp, signInWithOtp, verifyOtp, resetPassword } = useAuth();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(window.location.search);
@@ -222,9 +224,23 @@ const Auth = () => {
                         </InputOTPGroup>
                       </InputOTP>
                     </div>
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="terms-otp"
+                        checked={agreedToTerms}
+                        onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                        className="mt-0.5"
+                      />
+                      <label htmlFor="terms-otp" className="text-sm text-muted-foreground leading-snug">
+                        I agree to the{" "}
+                        <Link to="/terms" className="text-accent hover:underline font-medium">Terms & Conditions</Link>
+                        {" "}and{" "}
+                        <Link to="/privacy" className="text-accent hover:underline font-medium">Privacy Policy</Link>
+                      </label>
+                    </div>
                     <Button
                       onClick={handleVerifyOtp}
-                      disabled={loading}
+                      disabled={loading || !agreedToTerms}
                       className="w-full bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
                     >
                       {loading ? "Verifying..." : "Verify & Sign In"}
@@ -298,9 +314,25 @@ const Auth = () => {
                     Forgot Password?
                   </button>
                 )}
+                {!isAdminLogin && (
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="terms-email"
+                      checked={agreedToTerms}
+                      onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                      className="mt-0.5"
+                    />
+                    <label htmlFor="terms-email" className="text-sm text-muted-foreground leading-snug">
+                      I agree to the{" "}
+                      <Link to="/terms" className="text-accent hover:underline font-medium">Terms & Conditions</Link>
+                      {" "}and{" "}
+                      <Link to="/privacy" className="text-accent hover:underline font-medium">Privacy Policy</Link>
+                    </label>
+                  </div>
+                )}
                 <Button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || (!isAdminLogin && !agreedToTerms)}
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
                 >
                   {loading
