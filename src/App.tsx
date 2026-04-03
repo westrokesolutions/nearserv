@@ -16,6 +16,8 @@ import CustomerProfile from "./pages/CustomerProfile";
 import ResetPassword from "./pages/ResetPassword";
 import CategoryDetail from "./pages/CategoryDetail";
 import NotFound from "./pages/NotFound";
+import TermsAndConditions from "./pages/TermsAndConditions";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +40,8 @@ const App = () => (
             <Route path="/profile" element={<CustomerProfile />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
