@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, SlidersHorizontal, BadgeCheck, X, CheckCircle2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -9,6 +9,7 @@ import BookingFlow, { type BookingDetails } from "@/components/BookingFlow";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { useAuth } from "@/contexts/AuthContext";
 
 type ProfessionalWithCategory = Tables<"professionals"> & {
   categories: { name: string } | null;
