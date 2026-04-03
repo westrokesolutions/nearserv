@@ -16,6 +16,8 @@ import CustomerProfile from "./pages/CustomerProfile";
 import ResetPassword from "./pages/ResetPassword";
 import CategoryDetail from "./pages/CategoryDetail";
 import NotFound from "./pages/NotFound";
+import TermsAndConditions from "./pages/TermsAndConditions";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
