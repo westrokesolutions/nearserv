@@ -17,8 +17,18 @@ type ProfessionalWithCategory = Tables<"professionals"> & {
 
 const SearchPage = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const initialQuery = searchParams.get("q") || "";
   const initialLocation = searchParams.get("loc") || "";
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      const returnUrl = `/search?q=${encodeURIComponent(initialQuery)}&loc=${encodeURIComponent(initialLocation)}`;
+      navigate(`/auth?redirect=${encodeURIComponent(returnUrl)}`);
+    }
+  }, [authLoading, user, navigate, initialQuery, initialLocation]);
   const [query, setQuery] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
