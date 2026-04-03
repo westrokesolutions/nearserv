@@ -42,20 +42,6 @@ const SearchPage = () => {
   const [bookingComplete, setBookingComplete] = useState(false);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
 
-  useEffect(() => {
-    fetchCategories();
-    fetchProfessionals();
-  }, []);
-
-  // Don't render anything while checking auth or redirecting
-  if (authLoading || !user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
-  }
-
   const fetchCategories = async () => {
     const { data } = await supabase
       .from("categories")
@@ -74,6 +60,20 @@ const SearchPage = () => {
     if (data) setProfessionals(data as ProfessionalWithCategory[]);
     setLoading(false);
   };
+
+  useEffect(() => {
+    fetchCategories();
+    fetchProfessionals();
+  }, []);
+
+  // Don't render anything while checking auth or redirecting
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   const filtered = professionals.filter((p) => {
     const catName = p.categories?.name || "";
