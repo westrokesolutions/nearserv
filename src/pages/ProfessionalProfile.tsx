@@ -272,7 +272,7 @@ const ProfessionalProfile = () => {
                   onClick={async () => {
                     setHiring(true);
                     try {
-                      const { error } = await supabase.from("bookings").insert({
+                      const { data: bookingData, error } = await supabase.from("bookings").insert({
                         customer_name: pendingBooking.fullName,
                         customer_phone: pendingBooking.phone,
                         customer_email: pendingBooking.email || null,
@@ -289,7 +289,7 @@ const ProfessionalProfile = () => {
                         professional_id: professional.id,
                         professional_name: professional.full_name,
                         status: "confirmed",
-                      });
+                      }).select("id").single();
                       if (error) throw error;
 
                       try {
@@ -306,13 +306,14 @@ const ProfessionalProfile = () => {
 
                       // Send in-app notification to professional
                       try {
-                        await supabase.from("notifications").insert({
+                        const { error: notifError } = await supabase.from("notifications").insert({
                           professional_id: professional.id,
-                          booking_id: undefined,
+                          booking_id: bookingData?.id || null,
                           title: `New Job from ${pendingBooking.fullName}`,
                           message: `${pendingBooking.fullName} has hired you for ${pendingBooking.preferredDate} at ${pendingBooking.preferredTime || pendingBooking.customTime}. ${pendingBooking.jobDescription ? `Job: ${pendingBooking.jobDescription}` : ""}`.trim(),
                         });
-                      } catch { console.log("Notification insert skipped"); }
+                        if (notifError) console.error("Notification insert failed:", notifError);
+                      } catch (e) { console.error("Notification insert error:", e); }
 
                       sessionStorage.removeItem("pendingBooking");
                       setHired(true);
