@@ -180,9 +180,12 @@ const ProfessionalDashboard = () => {
             <Badge variant="outline" className="text-xs hidden sm:inline-flex">Professional</Badge>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-xs text-accent">
-              <Activity className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Live</span>
+            <div className="relative flex items-center gap-2">
+              {professional && <NotificationAlert professionalId={professional.id} />}
+              <div className="flex items-center gap-1.5 text-xs text-accent">
+                <Activity className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Live</span>
+              </div>
             </div>
             <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-muted-foreground text-xs hidden sm:inline-flex">
               Home
