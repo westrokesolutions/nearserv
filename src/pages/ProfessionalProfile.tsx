@@ -304,6 +304,16 @@ const ProfessionalProfile = () => {
                         });
                       } catch { console.log("SMS sending skipped or failed"); }
 
+                      // Send in-app notification to professional
+                      try {
+                        await supabase.from("notifications").insert({
+                          professional_id: professional.id,
+                          booking_id: undefined,
+                          title: `New Job from ${pendingBooking.fullName}`,
+                          message: `${pendingBooking.fullName} has hired you for ${pendingBooking.preferredDate} at ${pendingBooking.preferredTime || pendingBooking.customTime}. ${pendingBooking.jobDescription ? `Job: ${pendingBooking.jobDescription}` : ""}`.trim(),
+                        });
+                      } catch { console.log("Notification insert skipped"); }
+
                       sessionStorage.removeItem("pendingBooking");
                       setHired(true);
                       toast({
