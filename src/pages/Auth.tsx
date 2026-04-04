@@ -23,6 +23,7 @@ const Auth = () => {
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const { signIn, signUp, signInWithOtp, verifyOtp, resetPassword } = useAuth();
   const navigate = useNavigate();
