@@ -44,6 +44,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsAdmin(result);
   };
 
+  const checkProfessional = async (userId: string) => {
+    const { data } = await supabase
+      .from("professionals")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    setIsProfessional(!!data);
+    setProfessionalId(data?.id || null);
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
