@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom";
 import { MapPin, Phone, Mail, Instagram, Facebook, Twitter } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Footer = () => {
+  const { loading, isProfessional } = useAuth();
+
   return (
     <footer className="bg-foreground text-background/70 safe-bottom">
       <div className="container mx-auto px-4">
@@ -41,7 +44,7 @@ const Footer = () => {
           <div>
             <h4 className="font-display font-semibold text-background mb-4 text-sm uppercase tracking-wider">For Professionals</h4>
             <ul className="space-y-2.5 text-sm">
-              <li><Link to="/register" className="hover:text-accent transition-colors">Register</Link></li>
+              {!loading && !isProfessional && <li><Link to="/register" className="hover:text-accent transition-colors">Register</Link></li>}
               <li><Link to="/" className="hover:text-accent transition-colors">Premium Listing</Link></li>
               <li><Link to="/" className="hover:text-accent transition-colors">Verification</Link></li>
             </ul>
