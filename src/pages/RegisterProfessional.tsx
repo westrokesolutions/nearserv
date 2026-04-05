@@ -74,13 +74,20 @@ const RegisterProfessional = () => {
   const [suggestDescription, setSuggestDescription] = useState("");
   const [suggestSubmitting, setSuggestSubmitting] = useState(false);
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, isProfessional } = useAuth();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (loading) return;
+
+    if (!user) {
       navigate("/auth?redirect=/register");
+      return;
     }
-  }, [user, loading, navigate]);
+
+    if (isProfessional) {
+      navigate("/dashboard");
+    }
+  }, [user, loading, isProfessional, navigate]);
 
   useEffect(() => {
     supabase.from("categories").select("*").eq("is_active", true).order("name").then(({ data }) => {
@@ -121,10 +128,10 @@ const RegisterProfessional = () => {
     );
   }, []);
 
-  if (loading || !user) {
+  if (loading || !user || isProfessional) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{isProfessional ? "Redirecting to your dashboard..." : "Loading..."}</p>
       </div>
     );
   }

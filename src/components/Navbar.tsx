@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 
 const Navbar = () => {
-  const { user, isAdmin, isProfessional, signOut } = useAuth();
+  const { user, loading, isAdmin, isProfessional, signOut } = useAuth();
 
   const navLinks = (
     <>
@@ -23,7 +23,7 @@ const Navbar = () => {
     </>
   );
 
-  const authLinks = (
+  const authLinks = loading ? null : (
     <>
       {user ? (
         <>
@@ -137,7 +137,7 @@ const Navbar = () => {
                   </div>
 
                   <div className="border-t border-border pt-4 flex flex-col gap-3">
-                    {user ? (
+                    {loading ? null : user ? (
                       <>
                         {isAdmin && (
                           <SheetClose asChild>
