@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 
 const Navbar = () => {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, isProfessional, signOut } = useAuth();
 
   const navLinks = (
     <>
