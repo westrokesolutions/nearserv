@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 
 const Navbar = () => {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, isProfessional, signOut } = useAuth();
 
   const navLinks = (
     <>
@@ -48,15 +48,17 @@ const Navbar = () => {
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <LayoutDashboard className="w-4 h-4" />
-            Pro Dashboard
+            {isProfessional ? "Pro Dashboard" : "Dashboard"}
           </Link>
-          <Link
-            to="/register"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-colors"
-          >
-            <Award className="w-4 h-4" />
-            Join as Pro
-          </Link>
+          {!isProfessional && (
+            <Link
+              to="/register"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-colors"
+            >
+              <Award className="w-4 h-4" />
+              Join as Pro
+            </Link>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -163,18 +165,20 @@ const Navbar = () => {
                             className="inline-flex items-center gap-1.5 text-base font-medium text-foreground hover:text-accent transition-colors"
                           >
                             <LayoutDashboard className="w-4 h-4" />
-                            Pro Dashboard
+                            {isProfessional ? "Pro Dashboard" : "Dashboard"}
                           </Link>
                         </SheetClose>
-                        <SheetClose asChild>
-                          <Link
-                            to="/register"
-                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-colors w-full justify-center"
-                          >
-                            <Award className="w-4 h-4" />
-                            Join as Pro
-                          </Link>
-                        </SheetClose>
+                        {!isProfessional && (
+                          <SheetClose asChild>
+                            <Link
+                              to="/register"
+                              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-colors w-full justify-center"
+                            >
+                              <Award className="w-4 h-4" />
+                              Join as Pro
+                            </Link>
+                          </SheetClose>
+                        )}
                         <Button
                           variant="outline"
                           onClick={() => signOut()}

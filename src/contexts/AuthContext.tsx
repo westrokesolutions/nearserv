@@ -7,6 +7,8 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
+  isProfessional: boolean;
+  professionalId: string | null;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithOtp: (phone: string) => Promise<void>;
@@ -23,6 +25,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isProfessional, setIsProfessional] = useState(false);
+  const [professionalId, setProfessionalId] = useState<string | null>(null);
   const adminCacheRef = useRef<Record<string, boolean>>({});
   const initializedRef = useRef(false);
 
@@ -40,12 +44,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsAdmin(result);
   };
 
+  const checkProfessional = async (userId: string) => {
+    const { data } = await supabase
+      .from("professionals")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    setIsProfessional(!!data);
+    setProfessionalId(data?.id || null);
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        await checkAdmin(session.user.id);
+        await Promise.all([checkAdmin(session.user.id), checkProfessional(session.user.id)]);
       }
       setLoading(false);
       initializedRef.current = true;
@@ -57,9 +71,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          await checkAdmin(session.user.id);
+          await Promise.all([checkAdmin(session.user.id), checkProfessional(session.user.id)]);
         } else {
           setIsAdmin(false);
+          setIsProfessional(false);
+          setProfessionalId(null);
         }
         setLoading(false);
       }
@@ -114,7 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, signUp, signIn, signInWithOtp, verifyOtp, resetPassword, updatePassword, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, isProfessional, professionalId, signUp, signIn, signInWithOtp, verifyOtp, resetPassword, updatePassword, signOut }}>
       {children}
     </AuthContext.Provider>
   );
