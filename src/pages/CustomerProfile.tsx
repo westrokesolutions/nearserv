@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   User, Calendar, Clock, MapPin, Phone, Mail,
-  Briefcase, LogOut, History, Settings, ChevronRight,
-  Star, Shield, DollarSign, Award,
+  Briefcase, LogOut, History, Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,15 +15,13 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Booking = Tables<"bookings">;
-type Professional = Tables<"professionals"> & { categories?: { name: string } | null };
 
 const CustomerProfile = () => {
-  const { user, loading: authLoading, isProfessional, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [professional, setProfessional] = useState<Professional | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"bookings" | "profile" | "settings">("bookings");
+  const [tab, setTab] = useState<"bookings" | "settings">("bookings");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -48,26 +45,11 @@ const CustomerProfile = () => {
       }
       const { data: bookingData } = await query;
       if (bookingData) setBookings(bookingData);
-
-      // Fetch professional profile if user is a professional
-      const { data: proData } = await supabase
-        .from("professionals")
-        .select("*, categories(name)")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (proData) setProfessional(proData as Professional);
-
       setLoading(false);
     };
 
     fetchData();
   }, [user]);
-
-  useEffect(() => {
-    if (isProfessional && tab === "bookings") {
-      setTab("profile");
-    }
-  }, [isProfessional]);
 
   if (authLoading) {
     return (
@@ -89,10 +71,9 @@ const CustomerProfile = () => {
   };
 
   const displayPhone = user?.phone?.replace("+91", "") || "";
-  const displayName = professional?.full_name || user?.user_metadata?.full_name || displayPhone || user?.email || "User";
+  const displayName = user?.user_metadata?.full_name || displayPhone || user?.email || "User";
 
   const tabs = [
-    ...(isProfessional ? [{ key: "profile" as const, label: "My Info", icon: User }] : []),
     { key: "bookings" as const, label: "My Bookings", icon: History, badge: bookings.length },
     { key: "settings" as const, label: "Account", icon: Settings },
   ];
@@ -109,39 +90,26 @@ const CustomerProfile = () => {
             className="bg-card rounded-2xl border border-border p-6 mb-6"
           >
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center overflow-hidden">
-                {professional?.avatar_url ? (
-                  <img src={professional.avatar_url} alt={displayName} className="w-full h-full object-cover" />
-                ) : (
-                  <User className="w-8 h-8 text-accent" />
-                )}
+              <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center">
+                <User className="w-8 h-8 text-accent" />
               </div>
               <div className="flex-1">
                 <h1 className="font-display text-xl md:text-2xl font-bold text-foreground">{displayName}</h1>
-                {professional?.headline && (
-                  <p className="text-sm text-muted-foreground mt-0.5">{professional.headline}</p>
-                )}
                 <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-muted-foreground">
-                  {(professional?.phone || displayPhone) && (
+                  {displayPhone && (
                     <span className="flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5" /> +91 {professional?.phone || displayPhone}
+                      <Phone className="w-3.5 h-3.5" /> +91 {displayPhone}
                     </span>
                   )}
-                  {(professional?.email || user?.email) && (
+                  {user?.email && (
                     <span className="flex items-center gap-1">
-                      <Mail className="w-3.5 h-3.5" /> {professional?.email || user?.email}
+                      <Mail className="w-3.5 h-3.5" /> {user.email}
                     </span>
-                  )}
-                  {isProfessional && professional?.categories?.name && (
-                    <Badge variant="outline" className="bg-accent/10 text-accent border-accent/20">
-                      {professional.categories.name}
-                    </Badge>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Stats row */}
             <div className="grid grid-cols-3 gap-4 mt-6">
               <div className="text-center p-3 rounded-xl bg-secondary/50">
                 <p className="text-2xl font-bold text-foreground">{bookings.length}</p>
@@ -186,68 +154,6 @@ const CustomerProfile = () => {
               </button>
             ))}
           </div>
-
-          {/* Professional Info Tab */}
-          {tab === "profile" && professional && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-              <div className="bg-card rounded-xl border border-border p-5 md:p-6">
-                <h3 className="font-display font-bold text-foreground mb-4">Professional Information</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[
-                    { icon: User, label: "Full Name", value: professional.full_name },
-                    { icon: Mail, label: "Email", value: professional.email },
-                    { icon: Phone, label: "Phone", value: professional.phone },
-                    { icon: Briefcase, label: "Category", value: professional.categories?.name || "N/A" },
-                    { icon: MapPin, label: "Area", value: `${professional.area}, ${professional.city}` },
-                    { icon: Calendar, label: "Experience", value: professional.experience_years ? `${professional.experience_years} years` : "N/A" },
-                    { icon: DollarSign, label: "Per Day Rate", value: professional.hourly_rate ? `₹${professional.hourly_rate}` : "N/A" },
-                    { icon: MapPin, label: "Coverage", value: `${professional.coverage_radius_km || 5} km radius` },
-                  ].map((item) => (
-                    <div key={item.label} className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50 border border-border/50">
-                      <item.icon className="w-4 h-4 text-accent mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">{item.label}</p>
-                        <p className="text-sm font-medium text-foreground">{item.value}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {professional.description && (
-                  <div className="mt-4 p-3 rounded-lg bg-secondary/50 border border-border/50">
-                    <p className="text-xs text-muted-foreground mb-1">Description</p>
-                    <p className="text-sm text-foreground leading-relaxed">{professional.description}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Status badges */}
-              <div className="bg-card rounded-xl border border-border p-5 md:p-6">
-                <h3 className="font-display font-bold text-foreground mb-3">Status</h3>
-                <div className="flex gap-3 flex-wrap">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border font-medium ${
-                    professional.status === "approved" ? "bg-accent/10 text-accent border-accent/20"
-                    : professional.status === "pending" ? "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
-                    : "bg-destructive/10 text-destructive border-destructive/20"
-                  }`}>
-                    <Award className="w-3 h-3" /> {professional.status}
-                  </span>
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border font-medium ${
-                    professional.verification === "verified" ? "bg-accent/10 text-accent border-accent/20" : "bg-secondary text-muted-foreground border-border"
-                  }`}>
-                    <Shield className="w-3 h-3" /> {professional.verification === "verified" ? "Verified" : "Not Verified"}
-                  </span>
-                  {professional.is_premium && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border font-medium bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
-                      <Star className="w-3 h-3" /> Premium
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-3">
-                  Registered since {new Date(professional.created_at).toLocaleDateString()}
-                </p>
-              </div>
-            </motion.div>
-          )}
 
           {tab === "bookings" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
