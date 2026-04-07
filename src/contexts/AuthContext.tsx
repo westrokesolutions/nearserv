@@ -6,9 +6,6 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  isAdmin: boolean;
-  isProfessional: boolean;
-  professionalId: string | null;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithOtp: (phone: string) => Promise<void>;
@@ -24,59 +21,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isProfessional, setIsProfessional] = useState(false);
-  const [professionalId, setProfessionalId] = useState<string | null>(null);
-  const adminCacheRef = useRef<Record<string, boolean>>({});
   const initializedRef = useRef(false);
 
-  const checkAdmin = async (userId: string) => {
-    if (adminCacheRef.current[userId] !== undefined) {
-      setIsAdmin(adminCacheRef.current[userId]);
-      return;
-    }
-    const { data } = await supabase.rpc("has_role", {
-      _user_id: userId,
-      _role: "admin",
-    });
-    const result = !!data;
-    adminCacheRef.current[userId] = result;
-    setIsAdmin(result);
-  };
-
-  const checkProfessional = async (userId: string) => {
-    const { data } = await supabase
-      .from("professionals")
-      .select("id")
-      .eq("user_id", userId)
-      .maybeSingle();
-    setIsProfessional(!!data);
-    setProfessionalId(data?.id || null);
-  };
-
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
-        await Promise.all([checkAdmin(session.user.id), checkProfessional(session.user.id)]);
-      }
       setLoading(false);
       initializedRef.current = true;
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         if (!initializedRef.current) return;
         setSession(session);
         setUser(session?.user ?? null);
-        if (session?.user) {
-          await Promise.all([checkAdmin(session.user.id), checkProfessional(session.user.id)]);
-        } else {
-          setIsAdmin(false);
-          setIsProfessional(false);
-          setProfessionalId(null);
-        }
         setLoading(false);
       }
     );
@@ -124,13 +83,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    adminCacheRef.current = {};
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, isProfessional, professionalId, signUp, signIn, signInWithOtp, verifyOtp, resetPassword, updatePassword, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithOtp, verifyOtp, resetPassword, updatePassword, signOut }}>
       {children}
     </AuthContext.Provider>
   );

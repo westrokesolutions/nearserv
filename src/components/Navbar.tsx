@@ -1,12 +1,11 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Shield, Award, LogOut, LayoutDashboard, Menu, X, UserCircle } from "lucide-react";
+import { MapPin, Shield, LogOut, Menu, UserCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 
 const Navbar = () => {
-  const { user, loading, isAdmin, isProfessional, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
 
   const navLinks = (
     <>
@@ -27,15 +26,6 @@ const Navbar = () => {
     <>
       {user ? (
         <>
-          {isAdmin && (
-            <Link
-              to="/admin"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              Dashboard
-            </Link>
-          )}
           <Link
             to="/profile"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -43,22 +33,6 @@ const Navbar = () => {
             <UserCircle className="w-4 h-4" />
             My Profile
           </Link>
-          <Link
-            to="/dashboard"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            {isProfessional ? "Pro Dashboard" : "Dashboard"}
-          </Link>
-          {!isProfessional && (
-            <Link
-              to="/register"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-colors"
-            >
-              <Award className="w-4 h-4" />
-              Join as Pro
-            </Link>
-          )}
           <Button
             variant="ghost"
             size="sm"
@@ -70,21 +44,12 @@ const Navbar = () => {
           </Button>
         </>
       ) : (
-        <>
-          <Link
-            to="/auth"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Log in
-          </Link>
-          <Link
-            to="/register"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-colors"
-          >
-            <Award className="w-4 h-4" />
-            Join as Pro
-          </Link>
-        </>
+        <Link
+          to="/auth"
+          className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Log in
+        </Link>
       )}
     </>
   );
@@ -100,7 +65,6 @@ const Navbar = () => {
             <span className="font-display font-bold text-xl text-foreground">NearServ</span>
           </Link>
 
-          {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-8">
             {navLinks}
           </div>
@@ -109,7 +73,6 @@ const Navbar = () => {
             {authLinks}
           </div>
 
-          {/* Mobile hamburger */}
           <div className="md:hidden">
             <Sheet>
               <SheetTrigger asChild>
@@ -139,17 +102,6 @@ const Navbar = () => {
                   <div className="border-t border-border pt-4 flex flex-col gap-3">
                     {loading ? null : user ? (
                       <>
-                        {isAdmin && (
-                          <SheetClose asChild>
-                            <Link
-                              to="/admin"
-                              className="inline-flex items-center gap-1.5 text-base font-medium text-foreground hover:text-accent transition-colors"
-                            >
-                              <LayoutDashboard className="w-4 h-4" />
-                              Admin
-                            </Link>
-                          </SheetClose>
-                        )}
                         <SheetClose asChild>
                           <Link
                             to="/profile"
@@ -159,26 +111,6 @@ const Navbar = () => {
                             My Profile
                           </Link>
                         </SheetClose>
-                        <SheetClose asChild>
-                          <Link
-                            to="/dashboard"
-                            className="inline-flex items-center gap-1.5 text-base font-medium text-foreground hover:text-accent transition-colors"
-                          >
-                            <LayoutDashboard className="w-4 h-4" />
-                            {isProfessional ? "Pro Dashboard" : "Dashboard"}
-                          </Link>
-                        </SheetClose>
-                        {!isProfessional && (
-                          <SheetClose asChild>
-                            <Link
-                              to="/register"
-                              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-colors w-full justify-center"
-                            >
-                              <Award className="w-4 h-4" />
-                              Join as Pro
-                            </Link>
-                          </SheetClose>
-                        )}
                         <Button
                           variant="outline"
                           onClick={() => signOut()}
@@ -189,25 +121,14 @@ const Navbar = () => {
                         </Button>
                       </>
                     ) : (
-                      <>
-                        <SheetClose asChild>
-                          <Link
-                            to="/auth"
-                            className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors w-full"
-                          >
-                            Log in
-                          </Link>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Link
-                            to="/register"
-                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-semibold hover:bg-accent/90 transition-colors w-full justify-center"
-                          >
-                            <Award className="w-4 h-4" />
-                            Join as Pro
-                          </Link>
-                        </SheetClose>
-                      </>
+                      <SheetClose asChild>
+                        <Link
+                          to="/auth"
+                          className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors w-full"
+                        >
+                          Log in
+                        </Link>
+                      </SheetClose>
                     )}
                   </div>
                 </div>

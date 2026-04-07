@@ -1,14 +1,11 @@
 import { Link } from "react-router-dom";
 import { MapPin, Phone, Mail, Instagram, Facebook, Twitter } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 
 const Footer = () => {
-  const { loading, isProfessional } = useAuth();
-
   return (
     <footer className="bg-foreground text-background/70 safe-bottom">
       <div className="container mx-auto px-4">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 py-14">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 py-14">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
@@ -33,20 +30,11 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="font-display font-semibold text-background mb-4 text-sm uppercase tracking-wider">For Customers</h4>
+            <h4 className="font-display font-semibold text-background mb-4 text-sm uppercase tracking-wider">Quick Links</h4>
             <ul className="space-y-2.5 text-sm">
               <li><Link to="/search" className="hover:text-accent transition-colors">Find Services</Link></li>
               <li><Link to="/search" className="hover:text-accent transition-colors">Browse Categories</Link></li>
               <li><Link to="/" className="hover:text-accent transition-colors">How It Works</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-display font-semibold text-background mb-4 text-sm uppercase tracking-wider">For Professionals</h4>
-            <ul className="space-y-2.5 text-sm">
-              {!loading && !isProfessional && <li><Link to="/register" className="hover:text-accent transition-colors">Register</Link></li>}
-              <li><Link to="/" className="hover:text-accent transition-colors">Premium Listing</Link></li>
-              <li><Link to="/" className="hover:text-accent transition-colors">Verification</Link></li>
             </ul>
           </div>
 
@@ -72,8 +60,8 @@ const Footer = () => {
         <div className="border-t border-background/10 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
           <p>© {new Date().getFullYear()} NearServ. All rights reserved.</p>
           <div className="flex gap-6">
-            <Link to="/" className="hover:text-accent transition-colors">Privacy Policy</Link>
-            <Link to="/" className="hover:text-accent transition-colors">Terms of Service</Link>
+            <Link to="/privacy" className="hover:text-accent transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-accent transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>
